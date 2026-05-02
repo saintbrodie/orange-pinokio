@@ -7,7 +7,7 @@ module.exports = {
         venv: "env",
         path: "app",
         message: [
-          "python -m uvicorn main:app --host 0.0.0.0 --port 7070"
+          "python -m uvicorn app.main:app --port 7070"
         ],
         on: [{
           event: "/(http:\\/\\/[0-9.:]+)/",
