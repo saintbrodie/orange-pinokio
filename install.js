@@ -1,6 +1,7 @@
 module.exports = {
   run: [
     {
+      when: "{{!exists('app')}}",
       method: "shell.run",
       params: {
         message: [
@@ -11,7 +12,7 @@ module.exports = {
     {
       method: "shell.run",
       params: {
-        venv: "env",
+        venv: "../env",
         path: "app",
         message: [
           "uv pip install -r requirements.txt"

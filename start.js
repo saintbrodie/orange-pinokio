@@ -4,13 +4,13 @@ module.exports = {
     {
       method: "shell.run",
       params: {
-        venv: "env",
+        venv: "../env",
         path: "app",
         message: [
-          "python -m uvicorn app.main:app --port 7070"
+          "python -m uvicorn app.main:app --host 127.0.0.1 --port 7070"
         ],
         on: [{
-          event: "/(http:\\/\\/[0-9.:]+)/",
+          event: "/(http:\\/\\/[^\\s]+)/",
           done: true
         }]
       }

@@ -3,9 +3,9 @@ module.exports = {
   version: "3.1",
   title: "Orange",
   description: "A minimalist, dynamic web frontend wrapper around ComfyUI.",
-  icon: "icon.png",
+  icon: "icon.svg",
   menu: async (kernel, info) => {
-    let installed = info.exists("app/env") || info.exists("env")
+    let installed = info.exists("env") && info.exists("app")
     let running = {
       install: info.running("install.js"),
       start: info.running("start.js"),
