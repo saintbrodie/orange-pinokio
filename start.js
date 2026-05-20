@@ -7,7 +7,7 @@ module.exports = {
         venv: "../env",
         path: "app",
         message: [
-          "python -m uvicorn app.main:app --host 127.0.0.1 --port 7070"
+          "python -u -c \"import subprocess, os; RF = 'RESTART_REQUIRED'; CMD = ['python', '-m', 'uvicorn', 'app.main:app', '--host', '127.0.0.1', '--port', '7070']; subprocess.run(CMD); while os.path.exists(RF): os.remove(RF); subprocess.run(CMD)\""
         ],
         on: [{
           event: "/(http:\\/\\/[^\\s]+)/",
