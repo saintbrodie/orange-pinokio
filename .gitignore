@@ -1,0 +1,9 @@
+# Pinokio-managed runtime state
+app/
+env/
+
+# OS/editor noise
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
