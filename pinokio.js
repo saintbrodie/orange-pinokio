@@ -5,7 +5,9 @@ module.exports = {
   icon: "icon.svg",
   menu: async (kernel, info) => {
     const installed = info.exists("env") && info.exists("app")
-    const managedComfy = info.exists("comfyui/ComfyUI") && info.exists("comfy-env")
+    const managedSource = info.exists("comfyui/ComfyUI")
+    const managedComfy = managedSource && info.exists("comfy-env")
+    const managedIncomplete = installed && managedSource && !info.exists("comfy-env")
     const running = {
       chooser: info.running("install.js"),
       installManaged: info.running("install-managed.js"),
@@ -42,6 +44,26 @@ module.exports = {
         icon: "fa-solid fa-link",
         text: "Install Orange Only (Use Existing ComfyUI)",
         href: "install-orange.js",
+      }]
+    }
+
+    if (managedIncomplete) {
+      return [{
+        icon: "fa-solid fa-screwdriver-wrench",
+        text: "Finish Orange + ComfyUI Install",
+        href: "install-managed.js",
+      }, {
+        icon: "fa-solid fa-play",
+        text: "Start Orange Only",
+        href: "start.js",
+      }, {
+        icon: "fa-solid fa-arrows-rotate",
+        text: "Update",
+        href: "update.js",
+      }, {
+        icon: "fa-solid fa-triangle-exclamation",
+        text: "Factory Reset (Deletes Local Data)",
+        href: "reset.js",
       }]
     }
 
@@ -91,7 +113,7 @@ module.exports = {
     }, {
       icon: "fa-solid fa-screwdriver-wrench",
       text: "Repair Dependencies",
-      href: managedComfy ? "install-managed.js" : "install-orange.js",
+      href: managedSource ? "install-managed.js" : "install-orange.js",
     }, {
       icon: "fa-solid fa-triangle-exclamation",
       text: "Factory Reset (Deletes Local Data)",
