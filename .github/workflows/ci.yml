@@ -46,6 +46,27 @@ jobs:
           })
           NODE
 
+      - name: Verify incomplete managed installs are recoverable
+        run: |
+          node <<'NODE'
+          const launcher = require('./pinokio.js')
+          const paths = new Set(['env', 'app', 'comfyui/ComfyUI'])
+          const info = {
+            exists: (path) => paths.has(path),
+            running: () => false,
+            local: () => null,
+          }
+          launcher.menu({}, info).then((items) => {
+            const finish = items.find((item) => item.href === 'install-managed.js')
+            if (!finish || !/Finish Orange \+ ComfyUI Install/.test(finish.text)) {
+              throw new Error('Incomplete managed installs must offer a managed repair path')
+            }
+            if (items.some((item) => item.default)) {
+              throw new Error('Incomplete install recovery must not auto-run a choice')
+            }
+          })
+          NODE
+
       - name: Verify Windows auto-install shim cannot choose a mode
         run: |
           node <<'NODE'
