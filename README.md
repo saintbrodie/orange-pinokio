@@ -4,7 +4,7 @@
 
 ## Install Options
 
-Pinokio now offers two ways to install Orange:
+Pinokio now offers two ways to install Orange. On a fresh launcher, **neither option auto-runs**: choose the install mode you want first.
 
 ### Orange + ComfyUI — Recommended
 
