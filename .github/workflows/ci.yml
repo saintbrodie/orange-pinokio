@@ -18,6 +18,7 @@ jobs:
       - name: Check launcher JavaScript syntax
         run: |
           node --check install.js
+          node --check install-orange.js
           node --check start.js
           node --check update.js
           node --check reset.js
