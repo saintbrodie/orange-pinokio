@@ -1,41 +1,10 @@
 module.exports = {
   run: [
     {
-      when: "{{!exists('app')}}",
       method: "shell.run",
       params: {
         message: [
-          "git clone https://github.com/saintbrodie/Orange app"
-        ]
-      }
-    },
-    {
-      method: "shell.run",
-      params: {
-        venv: "../env",
-        path: "app",
-        message: [
-          "uv pip install -r requirements.txt"
-        ]
-      }
-    },
-    {
-      when: "{{!exists('comfyui/ComfyUI')}}",
-      method: "shell.run",
-      params: {
-        message: [
-          "git clone https://github.com/comfyanonymous/ComfyUI.git comfyui/ComfyUI"
-        ]
-      }
-    },
-    {
-      method: "shell.run",
-      params: {
-        venv: "comfy-env",
-        path: "comfyui/ComfyUI",
-        message: [
-          "{{pip.install.torch}}",
-          "pip install -r requirements.txt"
+          "echo Orange offers two install modes. Choose Orange + ComfyUI or Orange Only from the launcher menu."
         ]
       }
     }
