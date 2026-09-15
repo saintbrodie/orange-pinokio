@@ -24,5 +24,26 @@ jobs:
           node --check reset.js
           node --check pinokio.js
 
+      - name: Verify fresh installs require an explicit mode choice
+        run: |
+          node <<'NODE'
+          const launcher = require('./pinokio.js')
+          const info = {
+            exists: () => false,
+            running: () => false,
+            local: () => null,
+          }
+          launcher.menu({}, info).then((items) => {
+            if (items.length !== 2) throw new Error(`Expected 2 install choices, got ${items.length}`)
+            const hrefs = items.map((item) => item.href).sort()
+            if (hrefs.join(',') !== 'install-orange.js,install.js') {
+              throw new Error(`Unexpected install choices: ${hrefs.join(',')}`)
+            }
+            if (items.some((item) => item.default)) {
+              throw new Error('Fresh install choices must not set a Pinokio default')
+            }
+          })
+          NODE
+
       - name: Validate Pinokio metadata JSON
         run: node -e "JSON.parse(require('fs').readFileSync('pinokio.json', 'utf8'))"
