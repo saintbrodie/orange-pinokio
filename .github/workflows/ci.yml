@@ -18,6 +18,7 @@ jobs:
       - name: Check launcher JavaScript syntax
         run: |
           node --check install.js
+          node --check install-managed.js
           node --check install-orange.js
           node --check start.js
           node --check update.js
@@ -36,13 +37,27 @@ jobs:
           launcher.menu({}, info).then((items) => {
             if (items.length !== 2) throw new Error(`Expected 2 install choices, got ${items.length}`)
             const hrefs = items.map((item) => item.href).sort()
-            if (hrefs.join(',') !== 'install-orange.js,install.js') {
+            if (hrefs.join(',') !== 'install-managed.js,install-orange.js') {
               throw new Error(`Unexpected install choices: ${hrefs.join(',')}`)
             }
             if (items.some((item) => item.default)) {
               throw new Error('Fresh install choices must not set a Pinokio default')
             }
           })
+          NODE
+
+      - name: Verify Windows auto-install shim cannot choose a mode
+        run: |
+          node <<'NODE'
+          const fs = require('fs')
+          const chooser = fs.readFileSync('install.js', 'utf8')
+          if (/git clone|pip install|ComfyUI\.git/.test(chooser)) {
+            throw new Error('install.js must remain a chooser-only shim; Windows may auto-run it')
+          }
+          const managed = fs.readFileSync('install-managed.js', 'utf8')
+          if (!managed.includes('venv: "../../comfy-env"')) throw new Error('Managed ComfyUI venv must live at launcher root')
+          if (!managed.includes('/whl/cu130') || !managed.includes('/whl/cu128')) throw new Error('Managed installer must include CUDA 13.0 and 12.8 routes')
+          if (!managed.includes('--extra-index-url')) throw new Error('PyTorch install must keep PyPI available for dependencies')
           NODE
 
       - name: Validate Pinokio metadata JSON
