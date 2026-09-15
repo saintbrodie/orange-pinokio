@@ -7,29 +7,37 @@ module.exports = {
     const installed = info.exists("env") && info.exists("app")
     const managedComfy = info.exists("comfyui/ComfyUI") && info.exists("comfy-env")
     const running = {
-      install: info.running("install.js"),
+      chooser: info.running("install.js"),
+      installManaged: info.running("install-managed.js"),
       installOrange: info.running("install-orange.js"),
       start: info.running("start.js"),
       update: info.running("update.js"),
       reset: info.running("reset.js")
     }
 
-    if (running.install || running.installOrange) {
+    if (running.chooser) {
+      return [{
+        default: true,
+        icon: "fa-solid fa-list-check",
+        text: "Preparing install choices",
+        href: "install.js",
+      }]
+    }
+
+    if (running.installManaged || running.installOrange) {
       return [{
         default: true,
         icon: "fa-solid fa-plug",
         text: "Installing",
-        href: running.install ? "install.js" : "install-orange.js",
+        href: running.installManaged ? "install-managed.js" : "install-orange.js",
       }]
     }
 
     if (!installed) {
-      // Do not mark either installer as the default here. Pinokio automatically
-      // runs a default menu item, which would skip this install-mode choice.
       return [{
         icon: "fa-solid fa-wand-magic-sparkles",
         text: "Install Orange + ComfyUI (Recommended)",
-        href: "install.js",
+        href: "install-managed.js",
       }, {
         icon: "fa-solid fa-link",
         text: "Install Orange Only (Use Existing ComfyUI)",
@@ -83,7 +91,7 @@ module.exports = {
     }, {
       icon: "fa-solid fa-screwdriver-wrench",
       text: "Repair Dependencies",
-      href: managedComfy ? "install.js" : "install-orange.js",
+      href: managedComfy ? "install-managed.js" : "install-orange.js",
     }, {
       icon: "fa-solid fa-triangle-exclamation",
       text: "Factory Reset (Deletes Local Data)",
