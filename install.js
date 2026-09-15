@@ -38,16 +38,6 @@ module.exports = {
           "pip install -r requirements.txt"
         ]
       }
-    },
-    {
-      method: "shell.run",
-      params: {
-        venv: "../env",
-        path: "app",
-        message: [
-          "python scripts/download_models.py --pack z-image-turbo --models-root ../comfyui/ComfyUI/models"
-        ]
-      }
     }
   ]
 }
