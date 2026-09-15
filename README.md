@@ -4,7 +4,7 @@
 
 ## Install Options
 
-Pinokio now offers two ways to install Orange. On a fresh launcher, **neither option auto-runs**: choose the install mode you want first.
+Pinokio offers two ways to install Orange:
 
 ### Orange + ComfyUI — Recommended
 
@@ -17,13 +17,35 @@ Installs a complete local starter stack:
 
 When started, Pinokio runs Orange and the managed ComfyUI together. Orange receives the managed ComfyUI and model paths automatically, so its first-run wizard can configure the local backend without asking the user to find folders manually.
 
-The launcher intentionally does **not** pre-download a fixed Z-Image model anymore. Orange starts ComfyUI first, reads the connected GPU/VRAM from `/system_stats`, then chooses the appropriate curated model precision during first-run setup.
+The launcher intentionally does **not** pre-download a fixed Z-Image model. Orange starts ComfyUI first, reads the connected GPU/VRAM from `/system_stats`, then chooses the appropriate curated model precision during first-run setup.
 
 ### Orange Only — Use Existing ComfyUI
 
 Installs only Orange and its Python environment. Choose this if you already have ComfyUI running locally, through Stability Matrix, on another machine, or in another managed environment.
 
 Orange does **not** require Pinokio or a Pinokio-managed ComfyUI. The first-run wizard will simply ask for the ComfyUI URL and can use a local model path when one is available.
+
+### Why `install.js` Does Not Install Anything
+
+Some Pinokio builds/platforms automatically start a script named `install.js` immediately after adding an app. To keep that behavior from silently selecting the full Orange + ComfyUI stack, Orange reserves `install.js` as a short chooser shim only.
+
+The actual installers are:
+
+- `install-managed.js` — Orange + managed ComfyUI
+- `install-orange.js` — Orange only
+
+After the shim exits, the launcher presents both choices and neither is selected automatically.
+
+## Managed ComfyUI Runtime
+
+For NVIDIA systems, the managed installer uses current ComfyUI-style PyTorch routing rather than Pinokio's generic torch template:
+
+- NVIDIA driver 580+ → CUDA 13.0 PyTorch wheels
+- older supported NVIDIA drivers → CUDA 12.8 PyTorch wheels
+- macOS → standard PyPI PyTorch / MPS build
+- other GPU platforms fall back to Pinokio's platform-specific torch installer
+
+The managed ComfyUI environment lives at launcher-root `comfy-env/`, which is the same path used by `start.js`.
 
 ## First Run
 
