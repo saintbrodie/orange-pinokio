@@ -24,8 +24,9 @@ module.exports = {
     }
 
     if (!installed) {
+      // Do not mark either installer as the default here. Pinokio automatically
+      // runs a default menu item, which would skip this install-mode choice.
       return [{
-        default: true,
         icon: "fa-solid fa-wand-magic-sparkles",
         text: "Install Orange + ComfyUI (Recommended)",
         href: "install.js",
