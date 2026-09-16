@@ -8,7 +8,7 @@ Pinokio offers two ways to install Orange:
 
 ### Orange + ComfyUI — Recommended
 
-Installs a complete local starter stack:
+Installs a complete local runtime stack:
 
 - `app/` — Orange
 - `env/` — Orange Python environment
@@ -17,13 +17,13 @@ Installs a complete local starter stack:
 
 When started, Pinokio runs Orange and the managed ComfyUI together. Orange receives the managed ComfyUI and model paths automatically, so its first-run wizard can configure the local backend without asking the user to find folders manually.
 
-The launcher intentionally does **not** pre-download a fixed Z-Image model. Orange starts ComfyUI first, reads the connected GPU/VRAM from `/system_stats`, then chooses the appropriate curated model precision during first-run setup.
+The launcher intentionally does **not** pre-download Z-Image or any other workflow model. Curated workflows are optional; Orange inspects ComfyUI first and only downloads model dependencies for packs the user explicitly selects.
 
 ### Orange Only — Use Existing ComfyUI
 
 Installs only Orange and its Python environment. Choose this if you already have ComfyUI running locally, through Stability Matrix, on another machine, or in another managed environment.
 
-Orange does **not** require Pinokio or a Pinokio-managed ComfyUI. The first-run wizard will simply ask for the ComfyUI URL and can use a local model path when one is available.
+Orange does **not** require Pinokio or a Pinokio-managed ComfyUI. The first-run wizard asks for the ComfyUI URL, scans its available nodes and model dropdown inventory, and can reuse compatible curated-model variants that are already installed.
 
 ### Why `install.js` Does Not Install Anything
 
@@ -51,14 +51,14 @@ The managed ComfyUI environment lives at launcher-root `comfy-env/`, which is th
 
 Open Orange after installation and follow the setup wizard. Fresh installs will:
 
-1. Connect to ComfyUI and identify the available GPU/VRAM.
-2. Offer the minimal **Z-Image Turbo** starter workflow.
-3. Prefer native **INT8 ConvRot** when supported, otherwise choose an FP8/BF16 fallback appropriate for the pack and hardware.
-4. Install the selected model files automatically when Orange has access to the ComfyUI model directory.
-5. Optionally install curated **Krea 2 Turbo**, **Klein 9B Turbo**, and **SeedVR2 7B Upscale** tools.
+1. Connect to ComfyUI and inspect its GPU/VRAM, node inventory, and model choices.
+2. Show curated **Z-Image Turbo**, **Krea 2 Turbo**, **Klein 9B Turbo**, and **SeedVR2 7B Upscale** as optional tools. Z-Image is recommended for newcomers but is not required or selected automatically.
+3. Report which curated workflows can already run using compatible declared models found on that ComfyUI backend.
+4. For selected packs with missing dependencies, show exactly which model files Orange intends to download and select an appropriate INT8/FP8/BF16/FP16 variant for the hardware.
+5. Reuse compatible existing model variants and download only missing dependencies when Orange has access to the ComfyUI model directory.
 6. Run Orange Workflow Preflight before exposing each selected tool.
 7. Ask you to create an Admin password.
-8. Open the simple Generate UI.
+8. Allow setup to finish with **zero curated tools installed**; advanced users can go directly to Admin and add/import their own workflows.
 
 Existing Orange installations are not forced through this wizard when updating.
 
@@ -77,7 +77,11 @@ Existing Orange installations are not forced through this wizard when updating.
 
 ## Existing / Remote ComfyUI
 
-Orange can connect to one or more local or LAN ComfyUI servers. Automatic model installation requires Orange to have filesystem access to that backend's model storage. Remote backends without a shared/local model path can still be health-checked, preflighted, routed, and used normally; Orange will report missing dependencies rather than assuming remote filesystem access.
+Orange can connect to one or more local or LAN ComfyUI servers.
+
+For curated packs, Orange first scans the model options ComfyUI exposes through `/object_info`. If a backend already has compatible declared model variants, Orange can bind those exact filenames and add the workflow without downloading anything. That path does not require filesystem access and works with remote ComfyUI servers.
+
+If dependencies are missing, automatic download requires Orange to have a writable local/shared path to that backend's model storage. Orange shows the exact missing files before starting the install rather than assuming remote filesystem access.
 
 ## Localhost vs LAN Access
 
