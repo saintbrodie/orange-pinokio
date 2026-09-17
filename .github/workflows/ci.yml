@@ -81,5 +81,20 @@ jobs:
           if (!managed.includes('--extra-index-url')) throw new Error('PyTorch install must keep PyPI available for dependencies')
           NODE
 
+      - name: Verify Orange WebUI is only exposed after readiness
+        run: |
+          node <<'NODE'
+          const fs = require('fs')
+          const start = fs.readFileSync('start.js', 'utf8')
+          const ready = start.indexOf('wait_for_orange(orange)')
+          const exposed = start.indexOf("print('ORANGE_URL=' + orange_url")
+          if (ready < 0 || exposed < 0 || ready > exposed) {
+            throw new Error('start.js must wait for Orange HTTP readiness before exposing ORANGE_URL to Pinokio')
+          }
+          if (!start.includes('urllib.request.urlopen')) {
+            throw new Error('start.js must probe the Orange HTTP endpoint before setting the Pinokio WebUI URL')
+          }
+          NODE
+
       - name: Validate Pinokio metadata JSON
         run: node -e "JSON.parse(require('fs').readFileSync('pinokio.json', 'utf8'))"
