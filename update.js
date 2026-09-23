@@ -19,15 +19,8 @@ module.exports = {
     {
       when: "{{exists('comfyui/ComfyUI')}}",
       method: "shell.run",
-      params: {path: "comfyui/ComfyUI", message: "git pull --ff-only"}
-    },
-    {
-      when: "{{exists('comfyui/ComfyUI')}}",
-      method: "shell.run",
       params: {
-        venv: "../../comfy-env",
-        path: "comfyui/ComfyUI",
-        message: "pip install -r requirements.txt"
+        message: "node scripts/comfy-runtime.js adopt"
       }
     }
   ]
