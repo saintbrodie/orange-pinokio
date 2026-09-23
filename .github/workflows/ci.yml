@@ -22,6 +22,10 @@ jobs:
           node --check install-orange.js
           node --check start.js
           node --check update.js
+          node --check update-comfyui.js
+          node --check update-comfyui-latest.js
+          node --check rollback-comfyui.js
+          node --check scripts/comfy-runtime.js
           node --check reset.js
           node --check pinokio.js
 
@@ -94,6 +98,47 @@ jobs:
           if (!start.includes('urllib.request.urlopen')) {
             throw new Error('start.js must probe the Orange HTTP endpoint before setting the Pinokio WebUI URL')
           }
+          NODE
+
+      - name: Verify managed ComfyUI lifecycle is explicit
+        run: |
+          node <<'NODE'
+          const fs = require('fs')
+          const update = fs.readFileSync('update.js', 'utf8')
+          if (update.includes('path: "comfyui/ComfyUI"') && update.includes('git pull --ff-only')) {
+            throw new Error('Update Orange must not implicitly update ComfyUI')
+          }
+          const install = fs.readFileSync('install-managed.js', 'utf8')
+          if (!install.includes('Comfy-Org/ComfyUI.git')) throw new Error('Managed install must use the canonical ComfyUI repository')
+          if (!install.includes('pin-tested --initial')) throw new Error('Fresh managed installs must pin the Orange-tested ComfyUI revision')
+          const helper = fs.readFileSync('scripts/comfy-runtime.js', 'utf8')
+          for (const action of ['pin-tested', 'latest', 'rollback', 'adopt']) {
+            if (!helper.includes(action)) throw new Error(`Missing ComfyUI runtime action: ${action}`)
+          }
+          const start = fs.readFileSync('start.js', 'utf8')
+          if (!start.includes('ORANGE_COMFYUI_STATE') || !start.includes('ORANGE_MANAGED_COMFYUI_URL')) {
+            throw new Error('Orange must receive managed ComfyUI lifecycle state on start')
+          }
+          NODE
+
+      - name: Verify managed menu exposes safe and advanced update paths
+        run: |
+          node <<'NODE'
+          const launcher = require('./pinokio.js')
+          const paths = new Set(['env', 'app', 'comfyui/ComfyUI', 'comfy-env', 'runtime/comfyui-rollback-available'])
+          const info = {
+            exists: (path) => paths.has(path),
+            running: () => false,
+            local: () => null,
+          }
+          launcher.menu({}, info).then((items) => {
+            const hrefs = new Set(items.map(item => item.href))
+            for (const required of ['update.js', 'update-comfyui.js', 'update-comfyui-latest.js', 'rollback-comfyui.js']) {
+              if (!hrefs.has(required)) throw new Error(`Managed menu missing ${required}`)
+            }
+            const orangeUpdate = items.find(item => item.href === 'update.js')
+            if (!orangeUpdate || orangeUpdate.text !== 'Update Orange') throw new Error('Normal update action must be clearly Orange-only')
+          })
           NODE
 
       - name: Validate Pinokio metadata JSON
