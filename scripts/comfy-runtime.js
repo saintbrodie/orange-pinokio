@@ -6,6 +6,7 @@ const root = path.resolve(__dirname, '..')
 const comfyDir = path.join(root, 'comfyui', 'ComfyUI')
 const manifestPath = path.join(root, 'app', 'runtime', 'managed-runtime.json')
 const statePath = path.join(root, 'runtime', 'comfyui-state.json')
+const rollbackMarkerPath = path.join(root, 'runtime', 'comfyui-rollback-available')
 
 function git(args, options = {}) {
   return execFileSync('git', args, {
@@ -28,6 +29,15 @@ function writeJson(file, value) {
   const tmp = `${file}.tmp`
   fs.writeFileSync(tmp, `${JSON.stringify(value, null, 2)}\n`, 'utf8')
   fs.renameSync(tmp, file)
+}
+
+function syncRollbackMarker(previousCommit) {
+  fs.mkdirSync(path.dirname(rollbackMarkerPath), { recursive: true })
+  if (previousCommit) {
+    fs.writeFileSync(rollbackMarkerPath, `${previousCommit}\n`, 'utf8')
+  } else if (fs.existsSync(rollbackMarkerPath)) {
+    fs.unlinkSync(rollbackMarkerPath)
+  }
 }
 
 function manifest() {
@@ -62,6 +72,7 @@ function markState({ target, previous, channel, initial = false }) {
     updatedAt: new Date().toISOString(),
   }
   writeJson(statePath, next)
+  syncRollbackMarker(next.previousCommit)
   return next
 }
 
@@ -81,11 +92,12 @@ function adopt() {
       existing.updatedAt = new Date().toISOString()
       writeJson(statePath, existing)
     }
+    syncRollbackMarker(existing.previousCommit)
     return
   }
 
   const tested = manifest().testedCommit
-  writeJson(statePath, {
+  const state = {
     schemaVersion: 1,
     currentCommit: current,
     previousCommit: null,
@@ -95,7 +107,9 @@ function adopt() {
     validationError: null,
     tools: [],
     updatedAt: new Date().toISOString(),
-  })
+  }
+  writeJson(statePath, state)
+  syncRollbackMarker(null)
   console.log(`Adopted existing managed ComfyUI revision ${current.slice(0, 8)} without changing it.`)
 }
 
