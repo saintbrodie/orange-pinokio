@@ -65,6 +65,40 @@ function markState({ target, previous, channel, initial = false }) {
   return next
 }
 
+function adopt() {
+  const current = currentCommit()
+  if (!current) throw new Error('Managed ComfyUI repository is not installed.')
+
+  const existing = readJson(statePath, null)
+  if (existing && existing.currentCommit) {
+    if (existing.currentCommit !== current) {
+      existing.currentCommit = current
+      existing.targetCommit = current
+      existing.channel = current === manifest().testedCommit ? 'tested' : 'custom'
+      existing.validation = 'pending'
+      existing.validationError = null
+      existing.tools = []
+      existing.updatedAt = new Date().toISOString()
+      writeJson(statePath, existing)
+    }
+    return
+  }
+
+  const tested = manifest().testedCommit
+  writeJson(statePath, {
+    schemaVersion: 1,
+    currentCommit: current,
+    previousCommit: null,
+    targetCommit: current,
+    channel: current === tested ? 'tested' : 'custom',
+    validation: 'pending',
+    validationError: null,
+    tools: [],
+    updatedAt: new Date().toISOString(),
+  })
+  console.log(`Adopted existing managed ComfyUI revision ${current.slice(0, 8)} without changing it.`)
+}
+
 function fetchOrigin() {
   console.log('Fetching ComfyUI revisions...')
   git(['fetch', '--prune', 'origin'], { inherit: true })
@@ -142,7 +176,9 @@ function status() {
 
 const action = process.argv[2]
 try {
-  if (action === 'pin-tested') {
+  if (action === 'adopt') {
+    adopt()
+  } else if (action === 'pin-tested') {
     setTested({ initial: process.argv.includes('--initial') })
   } else if (action === 'latest') {
     setLatest()
@@ -151,7 +187,7 @@ try {
   } else if (action === 'status') {
     status()
   } else {
-    throw new Error('Usage: node scripts/comfy-runtime.js <pin-tested|latest|rollback|status> [--initial]')
+    throw new Error('Usage: node scripts/comfy-runtime.js <adopt|pin-tested|latest|rollback|status> [--initial]')
   }
 } catch (error) {
   console.error(`ComfyUI runtime operation failed: ${error.message}`)
