@@ -14,8 +14,11 @@ Installs a complete local runtime stack:
 - `env/` — Orange Python environment
 - `comfyui/ComfyUI/` — managed ComfyUI
 - `comfy-env/` — ComfyUI Python environment
+- `runtime/` — local managed-ComfyUI lifecycle state used for validation and rollback
 
 When started, Pinokio runs Orange and the managed ComfyUI together. Orange receives the managed ComfyUI and model paths automatically, so its first-run wizard can configure the local backend without asking the user to find folders manually.
+
+Fresh managed installs are checked out at the **Orange-tested ComfyUI revision** declared in `app/runtime/managed-runtime.json` instead of silently tracking whatever ComfyUI happens to publish that day. ComfyUI updates are explicit and independent from normal Orange updates.
 
 The launcher intentionally does **not** pre-download Z-Image or any other workflow model. Curated workflows are optional; Orange inspects ComfyUI first and only downloads model dependencies for packs the user explicitly selects.
 
@@ -24,6 +27,8 @@ The launcher intentionally does **not** pre-download Z-Image or any other workfl
 Installs only Orange and its Python environment. Choose this if you already have ComfyUI running locally, through Stability Matrix, on another machine, or in another managed environment.
 
 Orange does **not** require Pinokio or a Pinokio-managed ComfyUI. The first-run wizard asks for the ComfyUI URL, scans its available nodes and model dropdown inventory, and can reuse compatible curated-model variants that are already installed.
+
+Orange never changes the Git revision, Python environment, or packages of an external / bring-your-own ComfyUI backend.
 
 ### Why `install.js` Does Not Install Anything
 
@@ -47,6 +52,23 @@ For NVIDIA systems, the managed installer uses current ComfyUI-style PyTorch rou
 
 The managed ComfyUI environment lives at launcher-root `comfy-env/`, which is the same path used by `start.js`.
 
+Orange tracks a single known-good ComfyUI commit in `app/runtime/managed-runtime.json`. The initial baseline was chosen from the ComfyUI revision being used while the current curated Orange workflows were actively dogfooded rather than automatically promoting the latest upstream commit.
+
+Existing managed installations are **adopted without being moved** when this lifecycle feature first appears. Their current SHA is recorded as custom/tested as appropriate; the user explicitly chooses when to move to the Orange-tested revision.
+
+### Updating and rollback
+
+The Pinokio menu separates application updates from AI-runtime updates:
+
+- **Update Orange** — updates the launcher, Orange source, and Orange Python requirements. It does not move ComfyUI.
+- **Update ComfyUI (Orange-tested)** — checks out the revision declared by Orange and resyncs ComfyUI requirements.
+- **Update ComfyUI to Latest (Advanced)** — checks out current upstream ComfyUI `HEAD`. This version is intentionally labeled untested by Orange.
+- **Rollback ComfyUI** — appears after a ComfyUI revision actually changes and returns to the previously recorded revision.
+
+Before a ComfyUI revision changes, Pinokio records the previous SHA. The next time Orange starts, it automatically runs Workflow Preflight for every installed Orange tool against the managed backend and stores a compact pass/fail result. Admin shows whether the current runtime is the Orange-tested revision, upstream/untested, or custom, plus the last validation result.
+
+A failed Preflight does **not** silently roll back ComfyUI. The user can inspect the affected tools and choose **Rollback ComfyUI** from Pinokio.
+
 ## First Run
 
 Open Orange after installation and follow the setup wizard. Fresh installs will:
@@ -68,9 +90,12 @@ Existing Orange installations are not forced through this wizard when updating.
 - **Start Orange** — shown for Orange-only installs.
 - **Open Orange** — opens the normal Orange UI at `http://127.0.0.1:7070`.
 - **Open ComfyUI (Advanced)** — available when the launcher owns the managed ComfyUI instance.
-- **Update** — fast-forwards the launcher and Orange; managed installs also update ComfyUI and re-sync dependencies.
-- **Repair Dependencies** — re-runs the matching install path without deleting Orange data.
-- **Factory Reset (Deletes Local Data)** — removes Orange environments and, for managed installs, the bundled ComfyUI installation too.
+- **Update Orange** — fast-forwards the launcher and Orange and resyncs Orange dependencies only.
+- **Update ComfyUI (Orange-tested)** — moves managed ComfyUI to Orange's pinned known-good revision.
+- **Update ComfyUI to Latest (Advanced)** — deliberately opts into current upstream ComfyUI.
+- **Rollback ComfyUI** — returns to the prior recorded revision after a runtime change.
+- **Repair Dependencies** — re-runs the matching install path without deleting Orange data or intentionally advancing ComfyUI.
+- **Factory Reset (Deletes Local Data)** — removes Orange environments, managed-runtime state, and, for managed installs, the bundled ComfyUI installation too.
 
 > [!WARNING]
 > **Factory Reset is destructive.** Orange stores local configuration and history inside `app/`, so Factory Reset removes the local usage database, custom workflows, prompt files, Workflow Assets, and the managed ComfyUI/model files if present. Back up anything you want to keep first.
@@ -83,15 +108,19 @@ For curated packs, Orange first scans the model options ComfyUI exposes through 
 
 If dependencies are missing, automatic download requires Orange to have a writable local/shared path to that backend's model storage. Orange shows the exact missing files before starting the install rather than assuming remote filesystem access.
 
+External ComfyUI servers are compatibility-checked only. The managed update/rollback controls apply exclusively to the ComfyUI instance installed by this Pinokio launcher.
+
 ## Localhost vs LAN Access
 
 The Pinokio launcher intentionally starts Orange on `127.0.0.1`, so the Orange UI is available only on the computer running Pinokio by default.
 
 Orange's normal `run.bat` / `run.sh` launchers bind to `0.0.0.0` for LAN access. If you specifically want the Pinokio-managed instance exposed to your LAN, change the Uvicorn host in `start.js` to `0.0.0.0` and make sure you understand the network exposure involved.
 
-## Updating
+## Updating Source
 
-Updates use `git pull --ff-only`. The launcher does **not** automatically stash modifications to tracked application source files. This avoids silently creating stash conflicts or re-applying stale code after an update.
+Orange/launcher source updates use `git pull --ff-only`. The launcher does **not** automatically stash modifications to tracked application source files. This avoids silently creating stash conflicts or re-applying stale code after an update.
+
+Managed ComfyUI is intentionally different: it runs on a detached commit selected by the lifecycle helper, so normal Orange source updates cannot accidentally advance it.
 
 Normal Orange user data is kept in paths that Orange already treats as local data, so routine configuration changes should not interfere with updates. If you manually modify tracked Orange source files, Git may require you to resolve or revert those changes before updating.
 
