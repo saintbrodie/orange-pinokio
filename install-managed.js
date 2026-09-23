@@ -24,8 +24,16 @@ module.exports = {
       method: "shell.run",
       params: {
         message: [
-          "git clone https://github.com/comfyanonymous/ComfyUI.git comfyui/ComfyUI"
+          "git clone https://github.com/Comfy-Org/ComfyUI.git comfyui/ComfyUI",
+          "node scripts/comfy-runtime.js pin-tested --initial"
         ]
+      }
+    },
+    {
+      when: "{{exists('comfyui/ComfyUI')}}",
+      method: "shell.run",
+      params: {
+        message: "node scripts/comfy-runtime.js adopt"
       }
     },
     {
