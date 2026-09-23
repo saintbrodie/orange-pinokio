@@ -11,5 +11,8 @@ module.exports = {
   }, {
     method: "fs.rm",
     params: {path: "comfy-env"}
+  }, {
+    method: "fs.rm",
+    params: {path: "runtime"}
   }]
 }
