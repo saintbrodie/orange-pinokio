@@ -12,7 +12,14 @@ module.exports = {
     {
       method: "shell.run",
       params: {
+        message: "node scripts/ensure-python-312.js all"
+      }
+    },
+    {
+      method: "shell.run",
+      params: {
         venv: "../env",
+        venv_python: "3.12",
         path: "app",
         message: [
           "uv pip install -r requirements.txt"
@@ -41,6 +48,7 @@ module.exports = {
       method: "shell.run",
       params: {
         venv: "../../comfy-env",
+        venv_python: "3.12",
         path: "comfyui/ComfyUI",
         message: [
           "python -m pip install --upgrade pip setuptools wheel",
@@ -54,6 +62,7 @@ module.exports = {
       method: "shell.run",
       params: {
         venv: "../../comfy-env",
+        venv_python: "3.12",
         path: "comfyui/ComfyUI",
         message: [
           "python -m pip install --upgrade pip setuptools wheel",
@@ -67,6 +76,7 @@ module.exports = {
       method: "shell.run",
       params: {
         venv: "../../comfy-env",
+        venv_python: "3.12",
         path: "comfyui/ComfyUI",
         message: [
           "python -m pip install --upgrade pip setuptools wheel",
@@ -80,6 +90,7 @@ module.exports = {
       method: "shell.run",
       params: {
         venv: "../../comfy-env",
+        venv_python: "3.12",
         path: "comfyui/ComfyUI",
         message: [
           "python -m pip install --upgrade pip setuptools wheel",
