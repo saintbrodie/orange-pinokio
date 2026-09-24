@@ -10,8 +10,13 @@ module.exports = {
     },
     {
       method: "shell.run",
+      params: {message: "node scripts/ensure-python-312.js orange"}
+    },
+    {
+      method: "shell.run",
       params: {
         venv: "../env",
+        venv_python: "3.12",
         path: "app",
         message: "uv pip install -r requirements.txt"
       }
