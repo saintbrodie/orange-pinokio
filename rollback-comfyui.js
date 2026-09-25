@@ -18,7 +18,10 @@ module.exports = {
         venv: "../../comfy-env",
         venv_python: "3.12",
         path: "comfyui/ComfyUI",
-        message: "python -m pip install -r requirements.txt"
+        message: [
+          "python -m ensurepip --upgrade",
+          "python -m pip install -r requirements.txt"
+        ]
       }
     }
   ]
