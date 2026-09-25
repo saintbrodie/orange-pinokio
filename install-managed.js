@@ -51,6 +51,7 @@ module.exports = {
         venv_python: "3.12",
         path: "comfyui/ComfyUI",
         message: [
+          "python -m ensurepip --upgrade",
           "python -m pip install --upgrade pip setuptools wheel",
           "python -m pip install torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cu130",
           "python -m pip install -r requirements.txt"
@@ -65,6 +66,7 @@ module.exports = {
         venv_python: "3.12",
         path: "comfyui/ComfyUI",
         message: [
+          "python -m ensurepip --upgrade",
           "python -m pip install --upgrade pip setuptools wheel",
           "python -m pip install torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cu128",
           "python -m pip install -r requirements.txt"
@@ -79,6 +81,7 @@ module.exports = {
         venv_python: "3.12",
         path: "comfyui/ComfyUI",
         message: [
+          "python -m ensurepip --upgrade",
           "python -m pip install --upgrade pip setuptools wheel",
           "python -m pip install torch torchvision torchaudio",
           "python -m pip install -r requirements.txt"
@@ -93,6 +96,7 @@ module.exports = {
         venv_python: "3.12",
         path: "comfyui/ComfyUI",
         message: [
+          "python -m ensurepip --upgrade",
           "python -m pip install --upgrade pip setuptools wheel",
           "{{pip.install.torch}}",
           "python -m pip install -r requirements.txt"
