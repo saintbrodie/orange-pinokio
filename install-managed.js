@@ -18,7 +18,7 @@ module.exports = {
     {
       method: "shell.run",
       params: {
-        venv: "../env",
+        venv: "env",
         venv_python: "3.12",
         path: "app",
         message: [
