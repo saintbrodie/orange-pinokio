@@ -26,6 +26,7 @@ jobs:
           node --check update-comfyui-latest.js
           node --check rollback-comfyui.js
           node --check scripts/comfy-runtime.js
+          node --check scripts/start-runtime.js
           node --check reset.js
           node --check pinokio.js
 
@@ -81,6 +82,11 @@ jobs:
             if (!source.includes('venv: "comfy-env"')) throw new Error(`${file} must use the app-root comfy-env`)
             if (source.includes('../../comfy-env')) throw new Error(`${file} must not use traversal in the Pinokio venv field`)
           }
+          for (const file of ['install-managed.js', 'install-orange.js', 'update.js']) {
+            const source = fs.readFileSync(file, 'utf8')
+            if (!source.includes('venv: "env"')) throw new Error(`${file} must use the app-root Orange env`)
+            if (source.includes('../env')) throw new Error(`${file} must not use traversal in the Pinokio venv field`)
+          }
           const managed = fs.readFileSync('install-managed.js', 'utf8')
           if (!managed.includes('/whl/cu130') || !managed.includes('/whl/cu128')) throw new Error('Managed installer must include CUDA 13.0 and 12.8 routes')
           if (!managed.includes('--extra-index-url')) throw new Error('PyTorch install must keep PyPI available for dependencies')
@@ -89,6 +95,7 @@ jobs:
       - name: Verify legacy nested Mac ComfyUI installs stay usable
         run: |
           node <<'NODE'
+          const fs = require('fs')
           const launcher = require('./pinokio.js')
           const paths = new Set(['env', 'app', 'comfyui/ComfyUI', 'comfyui/ComfyUI/comfy-env'])
           const info = {
@@ -102,8 +109,8 @@ jobs:
               throw new Error('Legacy nested ComfyUI venv must still be recognized as managed')
             }
           })
-          const startScript = require('fs').readFileSync('start.js', 'utf8')
-          if (!startScript.includes("legacy_comfy_py")) throw new Error('start.js must retain the nested Mac venv fallback')
+          const runtime = fs.readFileSync('scripts/start-runtime.js', 'utf8')
+          if (!runtime.includes('legacyComfyPython')) throw new Error('Runtime must retain the nested Mac venv fallback')
           NODE
 
       - name: Verify Windows auto-install shim cannot choose a mode
@@ -116,18 +123,38 @@ jobs:
           }
           NODE
 
-      - name: Verify Orange WebUI is only exposed after readiness
+      - name: Verify runtime launcher avoids Pinokio venv activation
         run: |
           node <<'NODE'
           const fs = require('fs')
           const start = fs.readFileSync('start.js', 'utf8')
-          const ready = start.indexOf('wait_for_orange(orange)')
-          const exposed = start.indexOf("print('ORANGE_URL=' + orange_url")
-          if (ready < 0 || exposed < 0 || ready > exposed) {
-            throw new Error('start.js must wait for Orange HTTP readiness before exposing ORANGE_URL to Pinokio')
+          if (!start.includes('node scripts/start-runtime.js')) {
+            throw new Error('start.js must delegate to the explicit runtime launcher')
           }
-          if (!start.includes('urllib.request.urlopen')) {
-            throw new Error('start.js must probe the Orange HTTP endpoint before setting the Pinokio WebUI URL')
+          if (/venv\s*:/.test(start)) {
+            throw new Error('start.js must not ask Pinokio to activate a venv')
+          }
+          const runtime = fs.readFileSync('scripts/start-runtime.js', 'utf8')
+          if (!runtime.includes("path.join(root, 'env')")) {
+            throw new Error('Runtime must launch Orange with the root env Python explicitly')
+          }
+          if (!runtime.includes("path.join(root, 'comfy-env')")) {
+            throw new Error('Runtime must prefer the root ComfyUI env explicitly')
+          }
+          NODE
+
+      - name: Verify Orange WebUI is only exposed after readiness
+        run: |
+          node <<'NODE'
+          const fs = require('fs')
+          const runtime = fs.readFileSync('scripts/start-runtime.js', 'utf8')
+          const ready = runtime.indexOf('await waitForOrange()')
+          const exposed = runtime.indexOf('console.log(`ORANGE_URL=${orangeUrl}`)')
+          if (ready < 0 || exposed < 0 || ready > exposed) {
+            throw new Error('Runtime must wait for Orange HTTP readiness before exposing ORANGE_URL to Pinokio')
+          }
+          if (!runtime.includes('http.get')) {
+            throw new Error('Runtime must probe the Orange HTTP endpoint before setting the Pinokio WebUI URL')
           }
           NODE
 
@@ -146,8 +173,8 @@ jobs:
           for (const action of ['pin-tested', 'latest', 'rollback', 'adopt']) {
             if (!helper.includes(action)) throw new Error(`Missing ComfyUI runtime action: ${action}`)
           }
-          const start = fs.readFileSync('start.js', 'utf8')
-          if (!start.includes('ORANGE_COMFYUI_STATE') || !start.includes('ORANGE_MANAGED_COMFYUI_URL')) {
+          const runtime = fs.readFileSync('scripts/start-runtime.js', 'utf8')
+          if (!runtime.includes('ORANGE_COMFYUI_STATE') || !runtime.includes('ORANGE_MANAGED_COMFYUI_URL')) {
             throw new Error('Orange must receive managed ComfyUI lifecycle state on start')
           }
           NODE
