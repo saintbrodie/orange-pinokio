@@ -1,13 +1,15 @@
 module.exports = {
-  version: "3.3",
+  version: "3.4",
   title: "Orange",
   description: "A simple frontend for sharing ComfyUI workflows without teaching ComfyUI.",
   icon: "icon.svg",
   menu: async (kernel, info) => {
     const installed = info.exists("env") && info.exists("app")
     const managedSource = info.exists("comfyui/ComfyUI")
-    const managedComfy = managedSource && info.exists("comfy-env")
-    const managedIncomplete = installed && managedSource && !info.exists("comfy-env")
+    const managedRootComfy = info.exists("comfy-env")
+    const managedLegacyComfy = info.exists("comfyui/ComfyUI/comfy-env")
+    const managedComfy = managedSource && (managedRootComfy || managedLegacyComfy)
+    const managedIncomplete = installed && managedSource && !managedComfy
     const rollbackAvailable = info.exists("runtime/comfyui-rollback-available")
     const running = {
       chooser: info.running("install.js"),
