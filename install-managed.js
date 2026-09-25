@@ -47,7 +47,7 @@ module.exports = {
       when: "{{gpu === 'nvidia' && (platform === 'win32' || platform === 'linux') && Number.parseFloat(gpu_driver || '0') >= 580}}",
       method: "shell.run",
       params: {
-        venv: "../../comfy-env",
+        venv: "comfy-env",
         venv_python: "3.12",
         path: "comfyui/ComfyUI",
         message: [
@@ -62,7 +62,7 @@ module.exports = {
       when: "{{gpu === 'nvidia' && (platform === 'win32' || platform === 'linux') && !(Number.parseFloat(gpu_driver || '0') >= 580)}}",
       method: "shell.run",
       params: {
-        venv: "../../comfy-env",
+        venv: "comfy-env",
         venv_python: "3.12",
         path: "comfyui/ComfyUI",
         message: [
@@ -77,7 +77,7 @@ module.exports = {
       when: "{{platform === 'darwin'}}",
       method: "shell.run",
       params: {
-        venv: "../../comfy-env",
+        venv: "comfy-env",
         venv_python: "3.12",
         path: "comfyui/ComfyUI",
         message: [
@@ -92,7 +92,7 @@ module.exports = {
       when: "{{platform !== 'darwin' && gpu !== 'nvidia'}}",
       method: "shell.run",
       params: {
-        venv: "../../comfy-env",
+        venv: "comfy-env",
         venv_python: "3.12",
         path: "comfyui/ComfyUI",
         message: [
