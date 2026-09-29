@@ -28,5 +28,11 @@ function ensure(name, envDir) {
   fs.rmSync(envDir, { recursive: true, force: true })
 }
 
-if (target === 'all' || target === 'orange') ensure('Orange', path.join(root, 'env'))
-if (target === 'all' || target === 'comfy') ensure('ComfyUI', path.join(root, 'comfy-env'))
+if (target === 'all' || target === 'orange') {
+  ensure('Orange', path.join(root, 'app', 'env'))
+  ensure('Orange legacy', path.join(root, 'env'))
+}
+if (target === 'all' || target === 'comfy') {
+  ensure('ComfyUI', path.join(root, 'comfyui', 'ComfyUI', 'comfy-env'))
+  ensure('ComfyUI legacy', path.join(root, 'comfy-env'))
+}
