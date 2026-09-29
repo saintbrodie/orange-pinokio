@@ -19,6 +19,7 @@ module.exports = {
       installManaged: info.running("install-managed.js"),
       installOrange: info.running("install-orange.js"),
       start: info.running("start.js"),
+      startOrangeOnly: info.running("start-orange-only.js"),
       update: info.running("update.js"),
       updateComfy: info.running("update-comfyui.js"),
       updateComfyLatest: info.running("update-comfyui-latest.js"),
@@ -64,7 +65,7 @@ module.exports = {
       }, {
         icon: "fa-solid fa-play",
         text: "Start Orange Only",
-        href: "start.js",
+        href: "start-orange-only.js",
       }, {
         icon: "fa-solid fa-arrows-rotate",
         text: "Update Orange",
@@ -76,7 +77,8 @@ module.exports = {
       }]
     }
 
-    if (running.start) {
+    if (running.start || running.startOrangeOnly) {
+      const activeStart = running.startOrangeOnly ? "start-orange-only.js" : "start.js"
       const items = []
       if (orangeReady) {
         items.push({
@@ -89,11 +91,11 @@ module.exports = {
         items.push({
           default: true,
           icon: "fa-solid fa-spinner",
-          text: "Starting Orange",
-          href: "start.js",
+          text: running.startOrangeOnly ? "Starting Orange Only" : "Starting Orange",
+          href: activeStart,
         })
       }
-      if (managedComfy) {
+      if (managedComfy && running.start) {
         items.push({
           icon: "fa-solid fa-diagram-project",
           text: "Open ComfyUI (Advanced)",
@@ -104,7 +106,7 @@ module.exports = {
         items.push({
           icon: "fa-solid fa-terminal",
           text: "Terminal",
-          href: "start.js",
+          href: activeStart,
         })
       }
       return items
@@ -131,11 +133,21 @@ module.exports = {
       icon: "fa-solid fa-power-off",
       text: managedComfy ? "Start Orange + ComfyUI" : "Start Orange",
       href: "start.js",
-    }, {
+    }]
+
+    if (managedComfy) {
+      items.push({
+        icon: "fa-solid fa-link",
+        text: "Start Orange Only (Use Existing ComfyUI)",
+        href: "start-orange-only.js",
+      })
+    }
+
+    items.push({
       icon: "fa-solid fa-arrows-rotate",
       text: "Update Orange",
       href: "update.js",
-    }]
+    })
 
     if (managedComfy) {
       items.push({
