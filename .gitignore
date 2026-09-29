@@ -2,6 +2,7 @@
 app/
 env/
 runtime/logs/
+runtime/orange-ready
 
 # OS/editor noise
 .DS_Store
