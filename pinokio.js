@@ -13,6 +13,7 @@ module.exports = {
     const managedComfy = managedSource && (managedLocalComfy || managedRootComfy)
     const managedIncomplete = installed && managedSource && !managedComfy
     const rollbackAvailable = info.exists("runtime/comfyui-rollback-available")
+    const orangeReady = info.exists("runtime/orange-ready")
     const running = {
       chooser: info.running("install.js"),
       installManaged: info.running("install-managed.js"),
@@ -76,14 +77,20 @@ module.exports = {
     }
 
     if (running.start) {
-      const local = info.local("start.js")
       const items = []
-      if (local && local.url) {
+      if (orangeReady) {
         items.push({
           default: true,
           icon: "fa-solid fa-rocket",
           text: "Open Orange",
-          href: local.url,
+          href: "http://127.0.0.1:7070",
+        })
+      } else {
+        items.push({
+          default: true,
+          icon: "fa-solid fa-spinner",
+          text: "Starting Orange",
+          href: "start.js",
         })
       }
       if (managedComfy) {
@@ -93,11 +100,13 @@ module.exports = {
           href: "http://127.0.0.1:8188",
         })
       }
-      items.push({
-        icon: "fa-solid fa-terminal",
-        text: "Terminal",
-        href: "start.js",
-      })
+      if (orangeReady) {
+        items.push({
+          icon: "fa-solid fa-terminal",
+          text: "Terminal",
+          href: "start.js",
+        })
+      }
       return items
     }
 

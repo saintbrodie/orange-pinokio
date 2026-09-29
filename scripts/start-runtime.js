@@ -8,6 +8,7 @@ const appDir = path.join(root, 'app')
 const comfyDir = path.join(root, 'comfyui', 'ComfyUI')
 const runtimeDir = path.join(root, 'runtime')
 const logDir = path.join(runtimeDir, 'logs')
+const readyFile = path.join(runtimeDir, 'orange-ready')
 const restartFile = path.join(appDir, 'RESTART_REQUIRED')
 const orangeUrl = 'http://127.0.0.1:7070'
 const comfyUrl = 'http://127.0.0.1:8188'
@@ -48,6 +49,14 @@ if (managed) {
 let comfy = null
 let orange = null
 let stopping = false
+
+function clearOrangeReady() {
+  try { fs.rmSync(readyFile, { force: true }) } catch (_) {}
+}
+
+function markOrangeReady() {
+  try { fs.writeFileSync(readyFile, orangeUrl + '\n', 'utf8') } catch (_) {}
+}
 
 function printBanner() {
   console.log('')
@@ -165,6 +174,7 @@ function closeLogs() {
 function shutdown(code = 0) {
   if (stopping) return
   stopping = true
+  clearOrangeReady()
   terminate(orange)
   terminate(comfy)
   setTimeout(() => {
@@ -174,6 +184,7 @@ function shutdown(code = 0) {
 }
 
 async function main() {
+  clearOrangeReady()
   printBanner()
   status('Orange', 'starting...')
   status('ComfyUI', managed ? 'starting...' : 'external / not managed')
@@ -198,12 +209,14 @@ async function main() {
   orange = spawnOrange()
   orange.on('exit', async (code) => {
     if (stopping) return
+    clearOrangeReady()
     if (fs.existsSync(restartFile)) {
       try { fs.rmSync(restartFile, { force: true }) } catch (_) {}
       status('Orange', 'restarting...')
       orange = spawnOrange()
       try {
         await waitForOrange()
+        markOrangeReady()
         status('Orange', `ready   ${orangeUrl}`)
       } catch (err) {
         console.error(`  [Orange] ${err.message}`)
@@ -216,9 +229,8 @@ async function main() {
   })
 
   await waitForOrange()
+  markOrangeReady()
   status('Orange', `ready   ${orangeUrl}`)
-  console.log('')
-  console.log(`ORANGE_URL=${orangeUrl}`)
 }
 
 process.on('SIGINT', () => shutdown(0))

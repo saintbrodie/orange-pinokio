@@ -183,15 +183,52 @@ jobs:
         run: |
           node <<'NODE'
           const fs = require('fs')
+          const launcher = require('./pinokio.js')
           const runtime = fs.readFileSync('scripts/start-runtime.js', 'utf8')
+          const start = fs.readFileSync('start.js', 'utf8')
           const ready = runtime.indexOf('await waitForOrange()')
-          const exposed = runtime.indexOf('console.log(`ORANGE_URL=${orangeUrl}`)')
-          if (ready < 0 || exposed < 0 || ready > exposed) {
-            throw new Error('Runtime must wait for Orange HTTP readiness before exposing ORANGE_URL to Pinokio')
+          const marked = runtime.indexOf('markOrangeReady()', ready)
+          if (ready < 0 || marked < 0 || ready > marked) {
+            throw new Error('Runtime must mark Orange ready only after HTTP readiness')
+          }
+          if (!runtime.includes('clearOrangeReady()')) {
+            throw new Error('Runtime must clear the Orange readiness marker during lifecycle transitions')
+          }
+          if (/input\.event|local\.set|ORANGE_URL=/.test(start) || /ORANGE_URL=/.test(runtime)) {
+            throw new Error('Pinokio startup must not use URL event capture/local variables')
           }
           if (!runtime.includes('http.get')) {
-            throw new Error('Runtime must probe the Orange HTTP endpoint before setting the Pinokio WebUI URL')
+            throw new Error('Runtime must probe the Orange HTTP endpoint before marking it ready')
           }
+
+          const readyPaths = new Set(['app', 'app/env', 'runtime/orange-ready'])
+          const readyInfo = {
+            exists: (path) => readyPaths.has(path),
+            running: (path) => path === 'start.js',
+            local: () => null,
+          }
+          launcher.menu({}, readyInfo).then((items) => {
+            const open = items.find((item) => item.text === 'Open Orange')
+            if (!open || open.href !== 'http://127.0.0.1:7070' || !open.default) {
+              throw new Error('Ready runtime must expose the fixed Orange WebUI URL')
+            }
+          })
+
+          const startingPaths = new Set(['app', 'app/env'])
+          const startingInfo = {
+            exists: (path) => startingPaths.has(path),
+            running: (path) => path === 'start.js',
+            local: () => null,
+          }
+          launcher.menu({}, startingInfo).then((items) => {
+            if (items.some((item) => item.text === 'Open Orange')) {
+              throw new Error('Open Orange must stay hidden until the readiness marker exists')
+            }
+            const starting = items.find((item) => item.text === 'Starting Orange')
+            if (!starting || !starting.default) {
+              throw new Error('Starting runtime must keep the terminal/start view as the default')
+            }
+          })
           NODE
 
       - name: Verify managed ComfyUI lifecycle is explicit
