@@ -15,6 +15,32 @@ const orangeUrl = 'http://127.0.0.1:7070'
 const comfyUrl = 'http://127.0.0.1:8188'
 const verbose = /^(1|true|yes)$/i.test(String(process.env.ORANGE_VERBOSE_LOGS || ''))
 const skipManagedComfy = /^(1|true|yes)$/i.test(String(process.env.ORANGE_SKIP_MANAGED_COMFYUI || ''))
+const colorEnabled = !process.env.NO_COLOR && !/^(0|false|no)$/i.test(String(process.env.ORANGE_COLOR || '1'))
+const eventPrefix = 'ORANGE_EVENT '
+
+const ansi = {
+  orange: '\x1b[38;5;208m',
+  green: '\x1b[38;5;82m',
+  cyan: '\x1b[38;5;45m',
+  magenta: '\x1b[38;5;213m',
+  yellow: '\x1b[38;5;220m',
+  red: '\x1b[38;5;196m',
+  dim: '\x1b[38;5;245m',
+  reset: '\x1b[0m',
+}
+
+function paint(text, tone) {
+  if (!colorEnabled) return text
+  return `${ansi[tone]}${text}${ansi.reset}`
+}
+
+function valueTone(value) {
+  const lowered = String(value || '').toLowerCase()
+  if (lowered.includes('ready') || lowered.includes('complete')) return 'green'
+  if (lowered.includes('fail') || lowered.includes('stopped') || lowered.includes('error') || lowered.includes('already in use')) return 'red'
+  if (lowered.includes('starting') || lowered.includes('working') || lowered.includes('restarting')) return 'yellow'
+  return 'dim'
+}
 
 function pythonPath(envDir) {
   return process.platform === 'win32'
@@ -63,16 +89,38 @@ function markOrangeReady() {
 
 function printBanner() {
   console.log('')
-  console.log('      ▄▄▄   ▄▄▄·  ▐ ▄  ▄▄ • ▄▄▄ .')
-  console.log('▪     ▀▄ █·▐█ ▀█ •█▌▐█▐█ ▀ ▪▀▄.▀·')
-  console.log(' ▄█▀▄ ▐▀▀▄ ▄█▀▀█ ▐█▐▐▌▄█ ▀█▄▐▀▀▪▄')
-  console.log('▐█▌.▐▌▐█•█▌▐█ ▪▐▌██▐█▌▐█▄▪▐█▐█▄▄▌')
-  console.log(' ▀█▄▀▪.▀  ▀ ▀  ▀ ▀▀ █▪·▀▀▀▀  ▀▀▀ ')
+  for (const line of [
+    '      ▄▄▄   ▄▄▄·  ▐ ▄  ▄▄ • ▄▄▄ .',
+    '▪     ▀▄ █·▐█ ▀█ •█▌▐█▐█ ▀ ▪▀▄.▀·',
+    ' ▄█▀▄ ▐▀▀▄ ▄█▀▀█ ▐█▐▐▌▄█ ▀█▄▐▀▀▪▄',
+    '▐█▌.▐▌▐█•█▌▐█ ▪▐▌██▐█▌▐█▄▪▐█▐█▄▄▌',
+    ' ▀█▄▀▪.▀  ▀ ▀  ▀ ▀▀ █▪·▀▀▀▀  ▀▀▀ ',
+  ]) console.log(paint(line, 'orange'))
   console.log('')
 }
 
 function status(name, value) {
-  console.log(`  ${name.padEnd(9)} ${value}`)
+  const labelTone = name === 'Orange' ? 'orange' : name === 'ComfyUI' ? 'cyan' : 'dim'
+  const label = paint(name.padEnd(9), labelTone)
+  console.log(`  ${label} ${paint(value, valueTone(value))}`)
+}
+
+function renderEvent(payloadText) {
+  let event
+  try {
+    event = JSON.parse(payloadText)
+  } catch (_) {
+    console.log(`  ${paint('[Orange]', 'orange')} ${payloadText}`)
+    return
+  }
+
+  const kind = String(event.kind || 'activity').toLowerCase()
+  const state = String(event.state || 'info').toLowerCase()
+  const message = String(event.message || '').trim()
+  const label = kind === 'generation' ? 'Generate' : kind === 'llm' ? 'LLM' : 'Orange'
+  const labelTone = kind === 'generation' ? 'orange' : kind === 'llm' ? 'magenta' : 'cyan'
+  const stateTone = state === 'complete' ? 'green' : state === 'failed' ? 'red' : state === 'working' ? 'yellow' : 'cyan'
+  console.log(`  ${paint(`[${label}]`, labelTone)} ${paint(message, stateTone)}`)
 }
 
 function shouldSurface(line) {
@@ -87,21 +135,29 @@ function attachOutput(child, label, logStream) {
     let pending = ''
     stream.on('data', (chunk) => {
       logStream.write(chunk)
-      if (verbose) {
-        target.write(chunk)
-        return
-      }
       pending += chunk.toString()
       const lines = pending.split(/\r?\n/)
       pending = lines.pop() || ''
       for (const line of lines) {
         const trimmed = line.trim()
-        if (shouldSurface(trimmed)) target.write(`  [${label}] ${trimmed}\n`)
+        if (trimmed.startsWith(eventPrefix)) {
+          renderEvent(trimmed.slice(eventPrefix.length))
+        } else if (verbose) {
+          target.write(line + '\n')
+        } else if (shouldSurface(trimmed)) {
+          target.write(`  ${paint(`[${label}]`, 'red')} ${trimmed}\n`)
+        }
       }
     })
     stream.on('end', () => {
       const trimmed = pending.trim()
-      if (!verbose && shouldSurface(trimmed)) target.write(`  [${label}] ${trimmed}\n`)
+      if (trimmed.startsWith(eventPrefix)) {
+        renderEvent(trimmed.slice(eventPrefix.length))
+      } else if (verbose && pending) {
+        target.write(pending)
+      } else if (!verbose && shouldSurface(trimmed)) {
+        target.write(`  ${paint(`[${label}]`, 'red')} ${trimmed}\n`)
+      }
       pending = ''
     })
   }
@@ -163,8 +219,6 @@ function waitForHttp(url, proc, label, timeoutMs = 90000) {
       const req = http.get(url, { timeout: 1000 }, (res) => {
         res.resume()
         if (res.statusCode < 500) {
-          // A different process may already own this port. Give the child a short
-          // stabilization window so a bind failure cannot be mistaken for readiness.
           setTimeout(() => {
             if (settled || failIfExited()) return
             settled = true
@@ -223,7 +277,7 @@ async function main() {
 
   if (await isPortInUse('127.0.0.1', 7070)) {
     status('Orange', 'port 7070 already in use')
-    console.error('  [Orange] Another Orange process or application is already using http://127.0.0.1:7070.')
+    console.error(`  ${paint('[Orange]', 'red')} Another Orange process or application is already using http://127.0.0.1:7070.`)
     console.error('           Close it, then start Orange again.')
     closeLogs()
     process.exit(1)
@@ -233,7 +287,7 @@ async function main() {
   if (managed && await isPortInUse('127.0.0.1', 8188)) {
     status('Orange', 'not started')
     status('ComfyUI', 'port 8188 already in use')
-    console.error('  [ComfyUI] Another application is already using http://127.0.0.1:8188.')
+    console.error(`  ${paint('[ComfyUI]', 'red')} Another application is already using http://127.0.0.1:8188.`)
     console.error('             Close the other ComfyUI/app, then start Orange + ComfyUI again.')
     console.error('             Or choose Start Orange Only (Use Existing ComfyUI) in Pinokio.')
     closeLogs()
@@ -257,7 +311,7 @@ async function main() {
     waitForHttp(comfyUrl + '/system_stats', comfy, 'ComfyUI')
       .then(() => status('ComfyUI', `ready   ${comfyUrl}`))
       .catch((err) => {
-        if (!stopping) console.error(`  [ComfyUI] ${err.message}`)
+        if (!stopping) console.error(`  ${paint('[ComfyUI]', 'red')} ${err.message}`)
       })
   }
 
@@ -274,7 +328,7 @@ async function main() {
         markOrangeReady()
         status('Orange', `ready   ${orangeUrl}`)
       } catch (err) {
-        console.error(`  [Orange] ${err.message}`)
+        console.error(`  ${paint('[Orange]', 'red')} ${err.message}`)
         shutdown(1)
       }
       return
