@@ -79,34 +79,23 @@ module.exports = {
 
     if (running.start || running.startOrangeOnly) {
       const activeStart = running.startOrangeOnly ? "start-orange-only.js" : "start.js"
-      const items = []
-      if (orangeReady) {
-        items.push({
-          default: true,
-          icon: "fa-solid fa-rocket",
-          text: "Open Orange",
-          href: "http://127.0.0.1:7070",
-        })
-      } else {
-        items.push({
-          default: true,
-          icon: "fa-solid fa-spinner",
-          text: running.startOrangeOnly ? "Starting Orange Only" : "Starting Orange",
-          href: activeStart,
-        })
-      }
+      const items = [{
+        default: orangeReady,
+        icon: "fa-solid fa-rocket",
+        text: "Open Orange",
+        href: "http://127.0.0.1:7070",
+      }, {
+        default: !orangeReady,
+        icon: "fa-solid fa-terminal",
+        text: "Terminal",
+        href: activeStart,
+      }]
+
       if (managedComfy && running.start) {
-        items.push({
+        items.splice(1, 0, {
           icon: "fa-solid fa-diagram-project",
           text: "Open ComfyUI (Advanced)",
           href: "http://127.0.0.1:8188",
-        })
-      }
-      if (orangeReady) {
-        items.push({
-          icon: "fa-solid fa-terminal",
-          text: "Terminal",
-          href: activeStart,
         })
       }
       return items
