@@ -51,10 +51,11 @@ let stopping = false
 
 function printBanner() {
   console.log('')
-  console.log('  ___  ____   __   _  _  ____  ____')
-  console.log(' / _ \\| _ \\ /  \\ | \\| |/ ___|| __|')
-  console.log('| (_) |   /| () || .` || (_ || _|')
-  console.log(' \\___/|_|_\\ \\__/ |_|\\_| \\___||___|')
+  console.log('      ▄▄▄   ▄▄▄·  ▐ ▄  ▄▄ • ▄▄▄ .')
+  console.log('▪     ▀▄ █·▐█ ▀█ •█▌▐█▐█ ▀ ▪▀▄.▀·')
+  console.log(' ▄█▀▄ ▐▀▀▄ ▄█▀▀█ ▐█▐▐▌▄█ ▀█▄▐▀▀▪▄')
+  console.log('▐█▌.▐▌▐█•█▌▐█ ▪▐▌██▐█▌▐█▄▪▐█▐█▄▄▌')
+  console.log(' ▀█▄▀▪.▀  ▀ ▀  ▀ ▀▀ █▪·▀▀▀▀  ▀▀▀ ')
   console.log('')
 }
 
