@@ -1,6 +1,7 @@
 const fs = require('fs')
 const path = require('path')
 const http = require('http')
+const net = require('net')
 const { spawn } = require('child_process')
 
 const root = path.resolve(__dirname, '..')
@@ -126,18 +127,47 @@ function spawnComfy() {
   return child
 }
 
+function isPortInUse(host, port, timeoutMs = 500) {
+  return new Promise((resolve) => {
+    const socket = net.createConnection({ host, port })
+    let settled = false
+    const finish = (value) => {
+      if (settled) return
+      settled = true
+      socket.destroy()
+      resolve(value)
+    }
+    socket.setTimeout(timeoutMs)
+    socket.once('connect', () => finish(true))
+    socket.once('timeout', () => finish(false))
+    socket.once('error', () => finish(false))
+  })
+}
+
 function waitForHttp(url, proc, label, timeoutMs = 90000) {
   const deadline = Date.now() + timeoutMs
   return new Promise((resolve, reject) => {
-    const attempt = () => {
+    let settled = false
+    const failIfExited = () => {
       if (!proc || proc.exitCode !== null) {
+        settled = true
         reject(new Error(`${label} exited before it became ready${proc ? ` (exit code ${proc.exitCode})` : ''}`))
-        return
+        return true
       }
+      return false
+    }
+    const attempt = () => {
+      if (settled || failIfExited()) return
       const req = http.get(url, { timeout: 1000 }, (res) => {
         res.resume()
         if (res.statusCode < 500) {
-          resolve()
+          // A different process may already own this port. Give the child a short
+          // stabilization window so a bind failure cannot be mistaken for readiness.
+          setTimeout(() => {
+            if (settled || failIfExited()) return
+            settled = true
+            resolve()
+          }, 500)
           return
         }
         retry()
@@ -146,7 +176,9 @@ function waitForHttp(url, proc, label, timeoutMs = 90000) {
       req.on('error', retry)
     }
     const retry = () => {
+      if (settled) return
       if (Date.now() >= deadline) {
+        settled = true
         reject(new Error(`Timed out waiting for ${label} to become ready`))
         return
       }
@@ -186,6 +218,27 @@ function shutdown(code = 0) {
 async function main() {
   clearOrangeReady()
   printBanner()
+
+  if (await isPortInUse('127.0.0.1', 7070)) {
+    status('Orange', 'port 7070 already in use')
+    console.error('  [Orange] Another Orange process or application is already using http://127.0.0.1:7070.')
+    console.error('           Close it, then start Orange again.')
+    closeLogs()
+    process.exit(1)
+    return
+  }
+
+  if (managed && await isPortInUse('127.0.0.1', 8188)) {
+    status('Orange', 'not started')
+    status('ComfyUI', 'port 8188 already in use')
+    console.error('  [ComfyUI] Another application is already using http://127.0.0.1:8188.')
+    console.error('             Close the other ComfyUI/app, then start Orange + ComfyUI again.')
+    console.error('             If you intentionally want to use an existing ComfyUI, use Orange Only instead.')
+    closeLogs()
+    process.exit(1)
+    return
+  }
+
   status('Orange', 'starting...')
   status('ComfyUI', managed ? 'starting...' : 'external / not managed')
   if (!verbose) status('Logs', path.relative(root, logDir) + path.sep)
