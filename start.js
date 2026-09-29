@@ -11,17 +11,7 @@ module.exports = {
     {
       method: "shell.run",
       params: {
-        message: "node scripts/start-runtime.js",
-        on: [{
-          event: "/ORANGE_URL=(http:\\/\\/[^\\s]+)/",
-          done: true
-        }]
-      }
-    },
-    {
-      method: "local.set",
-      params: {
-        url: "{{input.event[1]}}"
+        message: "node scripts/start-runtime.js"
       }
     }
   ]
