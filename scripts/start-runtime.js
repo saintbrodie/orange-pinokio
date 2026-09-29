@@ -162,8 +162,10 @@ function shutdown(code = 0) {
   stopping = true
   terminate(orange)
   terminate(comfy)
-  closeLogs()
-  setTimeout(() => process.exit(code), 250)
+  setTimeout(() => {
+    closeLogs()
+    process.exit(code)
+  }, 250)
 }
 
 async function main() {
