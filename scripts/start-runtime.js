@@ -15,10 +15,13 @@ function pythonPath(envDir) {
     : path.join(envDir, 'bin', 'python')
 }
 
-const orangePython = pythonPath(path.join(root, 'env'))
+const localOrangePython = pythonPath(path.join(appDir, 'env'))
+const rootOrangePython = pythonPath(path.join(root, 'env'))
+const orangePython = fs.existsSync(localOrangePython) ? localOrangePython : rootOrangePython
+
+const localComfyPython = pythonPath(path.join(comfyDir, 'comfy-env'))
 const rootComfyPython = pythonPath(path.join(root, 'comfy-env'))
-const legacyComfyPython = pythonPath(path.join(comfyDir, 'comfy-env'))
-const comfyPython = fs.existsSync(rootComfyPython) ? rootComfyPython : legacyComfyPython
+const comfyPython = fs.existsSync(localComfyPython) ? localComfyPython : rootComfyPython
 const managed = fs.existsSync(comfyDir) && fs.existsSync(comfyPython)
 
 if (!fs.existsSync(orangePython)) {
@@ -91,6 +94,7 @@ function shutdown(code = 0) {
 }
 
 async function main() {
+  console.log(`ORANGE_ENV=${path.dirname(path.dirname(orangePython))}`)
   if (managed) {
     console.log(`COMFY_ENV=${path.dirname(path.dirname(comfyPython))}`)
     comfy = spawn(comfyPython, ['main.py', '--listen', '127.0.0.1', '--port', '8188'], {
