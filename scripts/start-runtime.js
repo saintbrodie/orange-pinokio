@@ -14,6 +14,7 @@ const restartFile = path.join(appDir, 'RESTART_REQUIRED')
 const orangeUrl = 'http://127.0.0.1:7070'
 const comfyUrl = 'http://127.0.0.1:8188'
 const verbose = /^(1|true|yes)$/i.test(String(process.env.ORANGE_VERBOSE_LOGS || ''))
+const skipManagedComfy = /^(1|true|yes)$/i.test(String(process.env.ORANGE_SKIP_MANAGED_COMFYUI || ''))
 
 function pythonPath(envDir) {
   return process.platform === 'win32'
@@ -28,7 +29,8 @@ const orangePython = fs.existsSync(localOrangePython) ? localOrangePython : root
 const localComfyPython = pythonPath(path.join(comfyDir, 'comfy-env'))
 const rootComfyPython = pythonPath(path.join(root, 'comfy-env'))
 const comfyPython = fs.existsSync(localComfyPython) ? localComfyPython : rootComfyPython
-const managed = fs.existsSync(comfyDir) && fs.existsSync(comfyPython)
+const managedInstalled = fs.existsSync(comfyDir) && fs.existsSync(comfyPython)
+const managed = managedInstalled && !skipManagedComfy
 
 if (!fs.existsSync(orangePython)) {
   console.error(`Orange Python environment not found: ${orangePython}`)
@@ -233,7 +235,7 @@ async function main() {
     status('ComfyUI', 'port 8188 already in use')
     console.error('  [ComfyUI] Another application is already using http://127.0.0.1:8188.')
     console.error('             Close the other ComfyUI/app, then start Orange + ComfyUI again.')
-    console.error('             If you intentionally want to use an existing ComfyUI, use Orange Only instead.')
+    console.error('             Or choose Start Orange Only (Use Existing ComfyUI) in Pinokio.')
     closeLogs()
     process.exit(1)
     return

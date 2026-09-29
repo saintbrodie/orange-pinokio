@@ -1,0 +1,47 @@
+name: Orange-only start
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  validate-orange-only-start:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Check Orange-only launcher syntax
+        run: |
+          node --check start-orange-only.js
+          node --check scripts/start-runtime.js
+          node --check pinokio.js
+      - name: Verify managed installs expose Orange-only start
+        run: |
+          node <<'NODE'
+          const fs = require('fs')
+          const launcher = require('./pinokio.js')
+          const paths = new Set(['app', 'app/env', 'comfyui/ComfyUI', 'comfyui/ComfyUI/comfy-env'])
+          const info = {
+            exists: (path) => paths.has(path),
+            running: () => false,
+            local: () => null,
+          }
+          launcher.menu({}, info).then((items) => {
+            const orangeOnly = items.find((item) => item.href === 'start-orange-only.js')
+            if (!orangeOnly || orangeOnly.text !== 'Start Orange Only (Use Existing ComfyUI)') {
+              throw new Error('Managed installs must expose an Orange-only start action')
+            }
+          })
+
+          const startOnly = fs.readFileSync('start-orange-only.js', 'utf8')
+          if (!startOnly.includes('ORANGE_SKIP_MANAGED_COMFYUI')) {
+            throw new Error('Orange-only start must explicitly disable managed ComfyUI')
+          }
+          const runtime = fs.readFileSync('scripts/start-runtime.js', 'utf8')
+          if (!runtime.includes('skipManagedComfy') || !runtime.includes('managedInstalled && !skipManagedComfy')) {
+            throw new Error('Runtime must honor the Orange-only managed-start flag')
+          }
+          NODE
