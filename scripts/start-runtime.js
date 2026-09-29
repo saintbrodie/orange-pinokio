@@ -146,6 +146,10 @@ function waitForHttp(url, proc, label, timeoutMs = 90000) {
   })
 }
 
+function waitForOrange() {
+  return waitForHttp(orangeUrl + '/', orange, 'Orange')
+}
+
 function terminate(child) {
   if (child && child.exitCode === null && !child.killed) {
     try { child.kill('SIGTERM') } catch (_) {}
@@ -198,7 +202,7 @@ async function main() {
       status('Orange', 'restarting...')
       orange = spawnOrange()
       try {
-        await waitForHttp(orangeUrl + '/', orange, 'Orange')
+        await waitForOrange()
         status('Orange', `ready   ${orangeUrl}`)
       } catch (err) {
         console.error(`  [Orange] ${err.message}`)
@@ -210,7 +214,7 @@ async function main() {
     shutdown(code || 0)
   })
 
-  await waitForHttp(orangeUrl + '/', orange, 'Orange')
+  await waitForOrange()
   status('Orange', `ready   ${orangeUrl}`)
   console.log('')
   console.log(`ORANGE_URL=${orangeUrl}`)
