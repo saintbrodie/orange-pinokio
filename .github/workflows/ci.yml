@@ -27,6 +27,7 @@ jobs:
           node --check rollback-comfyui.js
           node --check scripts/comfy-runtime.js
           node --check scripts/start-runtime.js
+          node --check scripts/ensure-python-312.js
           node --check reset.js
           node --check pinokio.js
 
@@ -55,7 +56,7 @@ jobs:
         run: |
           node <<'NODE'
           const launcher = require('./pinokio.js')
-          const paths = new Set(['env', 'app', 'comfyui/ComfyUI'])
+          const paths = new Set(['app', 'app/env', 'comfyui/ComfyUI'])
           const info = {
             exists: (path) => paths.has(path),
             running: () => false,
@@ -72,19 +73,19 @@ jobs:
           })
           NODE
 
-      - name: Verify managed venv paths are app-root relative
+      - name: Verify Pinokio venv fields use path-local names
         run: |
           node <<'NODE'
           const fs = require('fs')
-          const files = ['install-managed.js', 'update-comfyui.js', 'update-comfyui-latest.js', 'rollback-comfyui.js']
-          for (const file of files) {
+          const comfyFiles = ['install-managed.js', 'update-comfyui.js', 'update-comfyui-latest.js', 'rollback-comfyui.js']
+          for (const file of comfyFiles) {
             const source = fs.readFileSync(file, 'utf8')
-            if (!source.includes('venv: "comfy-env"')) throw new Error(`${file} must use the app-root comfy-env`)
+            if (!source.includes('venv: "comfy-env"')) throw new Error(`${file} must request the path-local comfy-env`)
             if (source.includes('../../comfy-env')) throw new Error(`${file} must not use traversal in the Pinokio venv field`)
           }
           for (const file of ['install-managed.js', 'install-orange.js', 'update.js']) {
             const source = fs.readFileSync(file, 'utf8')
-            if (!source.includes('venv: "env"')) throw new Error(`${file} must use the app-root Orange env`)
+            if (!source.includes('venv: "env"')) throw new Error(`${file} must request the path-local Orange env`)
             if (source.includes('../env')) throw new Error(`${file} must not use traversal in the Pinokio venv field`)
           }
           const managed = fs.readFileSync('install-managed.js', 'utf8')
@@ -92,12 +93,11 @@ jobs:
           if (!managed.includes('--extra-index-url')) throw new Error('PyTorch install must keep PyPI available for dependencies')
           NODE
 
-      - name: Verify legacy nested Mac ComfyUI installs stay usable
+      - name: Verify path-local installs are recognized
         run: |
           node <<'NODE'
-          const fs = require('fs')
           const launcher = require('./pinokio.js')
-          const paths = new Set(['env', 'app', 'comfyui/ComfyUI', 'comfyui/ComfyUI/comfy-env'])
+          const paths = new Set(['app', 'app/env', 'comfyui/ComfyUI', 'comfyui/ComfyUI/comfy-env'])
           const info = {
             exists: (path) => paths.has(path),
             running: () => false,
@@ -106,11 +106,32 @@ jobs:
           launcher.menu({}, info).then((items) => {
             const start = items.find((item) => item.href === 'start.js')
             if (!start || start.text !== 'Start Orange + ComfyUI') {
-              throw new Error('Legacy nested ComfyUI venv must still be recognized as managed')
+              throw new Error('Path-local Pinokio environments must be recognized as a complete managed install')
+            }
+          })
+          NODE
+
+      - name: Verify legacy root environments stay usable
+        run: |
+          node <<'NODE'
+          const fs = require('fs')
+          const launcher = require('./pinokio.js')
+          const paths = new Set(['app', 'env', 'comfyui/ComfyUI', 'comfy-env'])
+          const info = {
+            exists: (path) => paths.has(path),
+            running: () => false,
+            local: () => null,
+          }
+          launcher.menu({}, info).then((items) => {
+            const start = items.find((item) => item.href === 'start.js')
+            if (!start || start.text !== 'Start Orange + ComfyUI') {
+              throw new Error('Legacy root environments must remain usable')
             }
           })
           const runtime = fs.readFileSync('scripts/start-runtime.js', 'utf8')
-          if (!runtime.includes('legacyComfyPython')) throw new Error('Runtime must retain the nested Mac venv fallback')
+          if (!runtime.includes('rootOrangePython') || !runtime.includes('rootComfyPython')) {
+            throw new Error('Runtime must retain root-environment fallbacks')
+          }
           NODE
 
       - name: Verify Windows auto-install shim cannot choose a mode
@@ -135,11 +156,26 @@ jobs:
             throw new Error('start.js must not ask Pinokio to activate a venv')
           }
           const runtime = fs.readFileSync('scripts/start-runtime.js', 'utf8')
-          if (!runtime.includes("path.join(root, 'env')")) {
-            throw new Error('Runtime must launch Orange with the root env Python explicitly')
+          if (!runtime.includes("path.join(appDir, 'env')")) {
+            throw new Error('Runtime must prefer Orange app/env')
           }
-          if (!runtime.includes("path.join(root, 'comfy-env')")) {
-            throw new Error('Runtime must prefer the root ComfyUI env explicitly')
+          if (!runtime.includes("path.join(comfyDir, 'comfy-env')")) {
+            throw new Error('Runtime must prefer ComfyUI comfy-env')
+          }
+          NODE
+
+      - name: Verify Python 3.12 repair checks current and legacy layouts
+        run: |
+          node <<'NODE'
+          const fs = require('fs')
+          const helper = fs.readFileSync('scripts/ensure-python-312.js', 'utf8')
+          for (const needle of [
+            "path.join(root, 'app', 'env')",
+            "path.join(root, 'env')",
+            "path.join(root, 'comfyui', 'ComfyUI', 'comfy-env')",
+            "path.join(root, 'comfy-env')",
+          ]) {
+            if (!helper.includes(needle)) throw new Error(`Missing Python environment check: ${needle}`)
           }
           NODE
 
@@ -183,7 +219,7 @@ jobs:
         run: |
           node <<'NODE'
           const launcher = require('./pinokio.js')
-          const paths = new Set(['env', 'app', 'comfyui/ComfyUI', 'comfy-env', 'runtime/comfyui-rollback-available'])
+          const paths = new Set(['app', 'app/env', 'comfyui/ComfyUI', 'comfyui/ComfyUI/comfy-env', 'runtime/comfyui-rollback-available'])
           const info = {
             exists: (path) => paths.has(path),
             running: () => false,
