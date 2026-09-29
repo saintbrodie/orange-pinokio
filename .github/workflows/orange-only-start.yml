@@ -45,3 +45,45 @@ jobs:
             throw new Error('Runtime must honor the Orange-only managed-start flag')
           }
           NODE
+      - name: Verify running Orange always shows Open Orange and Terminal
+        run: |
+          node <<'NODE'
+          const launcher = require('./pinokio.js')
+          const managedPaths = new Set(['app', 'app/env', 'comfyui/ComfyUI', 'comfyui/ComfyUI/comfy-env'])
+
+          const startingInfo = {
+            exists: (path) => managedPaths.has(path),
+            running: (path) => path === 'start-orange-only.js',
+            local: () => null,
+          }
+          launcher.menu({}, startingInfo).then((items) => {
+            const open = items.find((item) => item.text === 'Open Orange')
+            const terminal = items.find((item) => item.text === 'Terminal')
+            if (!open || open.href !== 'http://127.0.0.1:7070') {
+              throw new Error('Running Orange-only mode must always expose Open Orange')
+            }
+            if (!terminal || terminal.href !== 'start-orange-only.js' || !terminal.default) {
+              throw new Error('Terminal must be the default until Orange is ready')
+            }
+            if (items.some((item) => /Starting Orange/.test(item.text))) {
+              throw new Error('Running menu must not remain on a Starting Orange label')
+            }
+          })
+
+          const readyPaths = new Set([...managedPaths, 'runtime/orange-ready'])
+          const readyInfo = {
+            exists: (path) => readyPaths.has(path),
+            running: (path) => path === 'start-orange-only.js',
+            local: () => null,
+          }
+          launcher.menu({}, readyInfo).then((items) => {
+            const open = items.find((item) => item.text === 'Open Orange')
+            const terminal = items.find((item) => item.text === 'Terminal')
+            if (!open || !open.default) {
+              throw new Error('Open Orange must become the default when readiness is detected')
+            }
+            if (!terminal || terminal.default) {
+              throw new Error('Terminal must remain available without being default after readiness')
+            }
+          })
+          NODE

@@ -179,7 +179,7 @@ jobs:
           }
           NODE
 
-      - name: Verify Orange WebUI is only exposed after readiness
+      - name: Verify Orange WebUI readiness and running tabs
         run: |
           node <<'NODE'
           const fs = require('fs')
@@ -209,8 +209,12 @@ jobs:
           }
           launcher.menu({}, readyInfo).then((items) => {
             const open = items.find((item) => item.text === 'Open Orange')
+            const terminal = items.find((item) => item.text === 'Terminal')
             if (!open || open.href !== 'http://127.0.0.1:7070' || !open.default) {
-              throw new Error('Ready runtime must expose the fixed Orange WebUI URL')
+              throw new Error('Ready runtime must expose the fixed Orange WebUI URL as default')
+            }
+            if (!terminal || terminal.href !== 'start.js') {
+              throw new Error('Ready runtime must retain the Terminal tab')
             }
           })
 
@@ -221,12 +225,16 @@ jobs:
             local: () => null,
           }
           launcher.menu({}, startingInfo).then((items) => {
-            if (items.some((item) => item.text === 'Open Orange')) {
-              throw new Error('Open Orange must stay hidden until the readiness marker exists')
+            const open = items.find((item) => item.text === 'Open Orange')
+            const terminal = items.find((item) => item.text === 'Terminal')
+            if (!open || open.href !== 'http://127.0.0.1:7070') {
+              throw new Error('Running runtime must expose Open Orange immediately')
             }
-            const starting = items.find((item) => item.text === 'Starting Orange')
-            if (!starting || !starting.default) {
-              throw new Error('Starting runtime must keep the terminal/start view as the default')
+            if (!terminal || terminal.href !== 'start.js' || !terminal.default) {
+              throw new Error('Terminal must remain the default until readiness is detected')
+            }
+            if (items.some((item) => /Starting Orange/.test(item.text))) {
+              throw new Error('Running menu must not use a Starting Orange placeholder tab')
             }
           })
           NODE
