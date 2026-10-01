@@ -1,0 +1,82 @@
+name: Network sharing
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  network-config:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Check network helper syntax
+        run: node --check scripts/network-config.js
+
+      - name: Verify network configuration behavior
+        run: |
+          node <<'NODE'
+          const { resolveNetworkConfig } = require('./scripts/network-config')
+
+          const local = resolveNetworkConfig({})
+          if (local.bindHost !== '127.0.0.1' || local.port !== 7070 || local.localUrl !== 'http://127.0.0.1:7070') {
+            throw new Error(`Unexpected local defaults: ${JSON.stringify(local)}`)
+          }
+
+          const shared = resolveNetworkConfig({ PINOKIO_SHARE_LOCAL: 'true' })
+          if (shared.bindHost !== '0.0.0.0' || shared.port !== 7070 || shared.localUrl !== 'http://127.0.0.1:7070') {
+            throw new Error(`PINOKIO_SHARE_LOCAL must enable all-interface binding: ${JSON.stringify(shared)}`)
+          }
+
+          const custom = resolveNetworkConfig({
+            PINOKIO_SHARE_LOCAL: 'true',
+            ORANGE_HOST: '192.168.1.25',
+            ORANGE_PORT: '9090',
+          })
+          if (custom.bindHost !== '192.168.1.25' || custom.port !== 9090 || custom.localUrl !== 'http://192.168.1.25:9090') {
+            throw new Error(`Explicit host/port must win: ${JSON.stringify(custom)}`)
+          }
+
+          for (const invalid of ['0', '65536', 'abc', '70.70']) {
+            let failed = false
+            try { resolveNetworkConfig({ ORANGE_PORT: invalid }) } catch (_) { failed = true }
+            if (!failed) throw new Error(`Invalid ORANGE_PORT must fail: ${invalid}`)
+          }
+          NODE
+
+      - name: Verify runtime uses configured host and port
+        run: |
+          node <<'NODE'
+          const fs = require('fs')
+          const runtime = fs.readFileSync('scripts/start-runtime.js', 'utf8')
+          if (!runtime.includes("resolveNetworkConfig(process.env)")) throw new Error('Runtime must resolve Orange network settings')
+          if (!runtime.includes("'--host', orangeHost")) throw new Error('Runtime must pass configured host to Uvicorn')
+          if (!runtime.includes("'--port', String(orangePort)")) throw new Error('Runtime must pass configured port to Uvicorn')
+          if (runtime.includes("'--host', '127.0.0.1', '--port', '7070'")) throw new Error('Runtime must not hard-code loopback Orange binding')
+          NODE
+
+      - name: Verify Pinokio Open Orange follows custom port
+        env:
+          PINOKIO_SHARE_LOCAL: "true"
+          ORANGE_PORT: "9090"
+        run: |
+          node <<'NODE'
+          const launcher = require('./pinokio.js')
+          const paths = new Set(['app', 'app/env', 'runtime/orange-ready'])
+          const info = {
+            exists: (path) => paths.has(path),
+            running: (path) => path === 'start.js',
+            local: () => null,
+          }
+          launcher.menu({}, info).then((items) => {
+            const open = items.find((item) => item.text === 'Open Orange')
+            if (!open || open.href !== 'http://127.0.0.1:9090') {
+              throw new Error(`Open Orange did not follow ORANGE_PORT: ${open && open.href}`)
+            }
+          })
+          NODE
