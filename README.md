@@ -44,14 +44,44 @@ The terminal stays quiet when idle and shows useful activity when something is h
 
 Full child-process logs are saved under `runtime/logs/`. Set `ORANGE_VERBOSE_LOGS=1` if you want the raw live output instead.
 
+## LAN sharing and custom ports
+
+Orange respects Pinokio's local-sharing setting directly.
+
+```text
+PINOKIO_SHARE_LOCAL=true
+```
+
+With no other network settings, that changes Orange from loopback-only to listening on all IPv4 interfaces (`0.0.0.0`) while keeping port `7070`.
+
+You can override either value yourself:
+
+```text
+ORANGE_HOST=0.0.0.0
+ORANGE_PORT=9090
+```
+
+`ORANGE_HOST` can be a specific hostname or IP address if you do not want to listen on every interface. `ORANGE_PORT` accepts any free TCP port from `1` through `65535`.
+
+The defaults are:
+
+```text
+ORANGE_HOST=127.0.0.1
+ORANGE_PORT=7070
+```
+
+`PINOKIO_SHARE_LOCAL_PORT` is separate. It controls the port used by Pinokio's own LAN proxy, not Orange's Uvicorn server. You can leave it blank for an automatically selected proxy port or set it to any other free port. Do not set it to the same port as `ORANGE_PORT`.
+
+Sharing Orange on the LAN makes the Orange web interface reachable by other devices on that network, subject to the host firewall and network policy.
+
 ## Port conflicts
 
-Managed startup checks ports before launching anything.
+Startup checks Orange's configured port before launching.
 
-- `7070` must be free for Orange.
+- `ORANGE_PORT` defaults to `7070` and must be free for Orange.
 - `8188` must be free when Pinokio is starting the managed ComfyUI.
 
-If another ComfyUI is already using `8188`, close it and start the managed stack again, or choose **Start Orange Only (Use Existing ComfyUI)**.
+If the Orange port is already in use, choose another `ORANGE_PORT`. If another ComfyUI is already using `8188`, close it and start the managed stack again, or choose **Start Orange Only (Use Existing ComfyUI)**.
 
 ## First run
 
