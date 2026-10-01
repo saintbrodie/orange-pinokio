@@ -3,6 +3,7 @@ const path = require('path')
 const http = require('http')
 const net = require('net')
 const { spawn } = require('child_process')
+const { resolveNetworkConfig } = require('./network-config')
 
 const root = path.resolve(__dirname, '..')
 const appDir = path.join(root, 'app')
@@ -11,7 +12,10 @@ const runtimeDir = path.join(root, 'runtime')
 const logDir = path.join(runtimeDir, 'logs')
 const readyFile = path.join(runtimeDir, 'orange-ready')
 const restartFile = path.join(appDir, 'RESTART_REQUIRED')
-const orangeUrl = 'http://127.0.0.1:7070'
+const network = resolveNetworkConfig(process.env)
+const orangeHost = network.bindHost
+const orangePort = network.port
+const orangeUrl = network.localUrl
 const comfyUrl = 'http://127.0.0.1:8188'
 const verbose = /^(1|true|yes)$/i.test(String(process.env.ORANGE_VERBOSE_LOGS || ''))
 const skipManagedComfy = /^(1|true|yes)$/i.test(String(process.env.ORANGE_SKIP_MANAGED_COMFYUI || ''))
@@ -164,7 +168,7 @@ function attachOutput(child, label, logStream) {
 }
 
 function spawnOrange() {
-  const args = ['-m', 'uvicorn', 'app.main:app', '--host', '127.0.0.1', '--port', '7070']
+  const args = ['-m', 'uvicorn', 'app.main:app', '--host', orangeHost, '--port', String(orangePort)]
   if (!verbose) args.push('--no-access-log', '--log-level', 'warning')
   const child = spawn(orangePython, args, {
     cwd: appDir,
@@ -275,10 +279,10 @@ async function main() {
   clearOrangeReady()
   printBanner()
 
-  if (await isPortInUse('127.0.0.1', 7070)) {
-    status('Orange', 'port 7070 already in use')
-    console.error(`  ${paint('[Orange]', 'red')} Another Orange process or application is already using http://127.0.0.1:7070.`)
-    console.error('           Close it, then start Orange again.')
+  if (await isPortInUse(network.openHost, orangePort)) {
+    status('Orange', `port ${orangePort} already in use`)
+    console.error(`  ${paint('[Orange]', 'red')} Another Orange process or application is already using ${orangeUrl}.`)
+    console.error('           Close it, choose another ORANGE_PORT, then start Orange again.')
     closeLogs()
     process.exit(1)
     return
@@ -297,6 +301,7 @@ async function main() {
 
   status('Orange', 'starting...')
   status('ComfyUI', managed ? 'starting...' : 'external / not managed')
+  if (network.shareLocal || orangeHost !== '127.0.0.1') status('Network', `listening on ${orangeHost}:${orangePort}`)
   if (!verbose) status('Logs', path.relative(root, logDir) + path.sep)
   console.log('')
 
