@@ -81,3 +81,9 @@ Back up anything you want to keep before using Factory Reset.
 
 - [Pinokio](https://pinokio.computer)
 - A system supported by ComfyUI if you use the managed Orange + ComfyUI install
+
+## License
+
+The Orange Pinokio launcher is released under the [MIT License](LICENSE).
+
+Orange, ComfyUI, and any model weights installed through Orange retain their own licenses and terms.
