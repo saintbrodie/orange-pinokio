@@ -1,6 +1,8 @@
 # Orange Pinokio Launcher
 
-![Orange running in Pinokio](docs/pinokio.webp)
+<p align="center">
+  <img src="docs/pinokio.webp" width="100%" alt="Orange running in Pinokio" />
+</p>
 
 This is the Pinokio launcher for [Orange](https://github.com/saintbrodie/Orange), a simple frontend for engineered **ComfyUI** workflows.
 
