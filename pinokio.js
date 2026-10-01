@@ -1,9 +1,13 @@
+const { resolveNetworkConfig } = require('./scripts/network-config')
+
 module.exports = {
   version: "3.5",
   title: "Orange",
   description: "A simple frontend for sharing ComfyUI workflows without teaching ComfyUI.",
   icon: "icon.svg",
   menu: async (kernel, info) => {
+    const network = resolveNetworkConfig(process.env)
+    const orangeOpenUrl = network.localUrl
     const orangeLocalEnv = info.exists("app/env")
     const orangeRootEnv = info.exists("env")
     const installed = info.exists("app") && (orangeLocalEnv || orangeRootEnv)
@@ -83,7 +87,7 @@ module.exports = {
         default: orangeReady,
         icon: "fa-solid fa-rocket",
         text: "Open Orange",
-        href: "http://127.0.0.1:7070",
+        href: orangeOpenUrl,
       }, {
         default: !orangeReady,
         icon: "fa-solid fa-terminal",
