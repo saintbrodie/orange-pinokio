@@ -22,7 +22,7 @@ module.exports = {
         venv_python: "3.12",
         path: "app",
         message: [
-          "uv pip install -r requirements.txt"
+          "uv pip install --python ./env -r requirements.txt"
         ]
       }
     },
@@ -52,9 +52,9 @@ module.exports = {
         path: "comfyui/ComfyUI",
         message: [
           "python -m ensurepip --upgrade",
-          "python -m pip install --upgrade pip setuptools wheel",
-          "python -m pip install torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cu130",
-          "python -m pip install -r requirements.txt"
+          "uv pip install --python ./comfy-env --upgrade pip setuptools wheel",
+          "uv pip install --python ./comfy-env torch torchvision torchaudio --index-strategy unsafe-best-match --extra-index-url https://download.pytorch.org/whl/cu130",
+          "uv pip install --python ./comfy-env -r requirements.txt"
         ]
       }
     },
@@ -67,9 +67,9 @@ module.exports = {
         path: "comfyui/ComfyUI",
         message: [
           "python -m ensurepip --upgrade",
-          "python -m pip install --upgrade pip setuptools wheel",
-          "python -m pip install torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cu128",
-          "python -m pip install -r requirements.txt"
+          "uv pip install --python ./comfy-env --upgrade pip setuptools wheel",
+          "uv pip install --python ./comfy-env torch torchvision torchaudio --index-strategy unsafe-best-match --extra-index-url https://download.pytorch.org/whl/cu128",
+          "uv pip install --python ./comfy-env -r requirements.txt"
         ]
       }
     },
@@ -82,9 +82,9 @@ module.exports = {
         path: "comfyui/ComfyUI",
         message: [
           "python -m ensurepip --upgrade",
-          "python -m pip install --upgrade pip setuptools wheel",
-          "python -m pip install torch torchvision torchaudio",
-          "python -m pip install -r requirements.txt"
+          "uv pip install --python ./comfy-env --upgrade pip setuptools wheel",
+          "uv pip install --python ./comfy-env torch torchvision torchaudio",
+          "uv pip install --python ./comfy-env -r requirements.txt"
         ]
       }
     },
@@ -97,9 +97,9 @@ module.exports = {
         path: "comfyui/ComfyUI",
         message: [
           "python -m ensurepip --upgrade",
-          "python -m pip install --upgrade pip setuptools wheel",
-          "{{pip.install.torch}}",
-          "python -m pip install -r requirements.txt"
+          "uv pip install --python ./comfy-env --upgrade pip setuptools wheel",
+          "{{pip.install.torch.replace(/^(?:uv )?pip3? install /, 'uv pip install --python ./comfy-env ')}}",
+          "uv pip install --python ./comfy-env -r requirements.txt"
         ]
       }
     }

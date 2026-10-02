@@ -282,3 +282,22 @@ jobs:
 
       - name: Validate Pinokio metadata JSON
         run: node -e "JSON.parse(require('fs').readFileSync('pinokio.json', 'utf8'))"
+
+      - name: Verify package installation targets and Torch routes
+        run: node --test tests/package-install.test.js
+
+  uv-target:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: false
+      - name: Verify uv installs only into the explicit Orange and ComfyUI environments
+        run: python tests/test_uv_target.py
