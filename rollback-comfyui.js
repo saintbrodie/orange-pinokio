@@ -21,8 +21,8 @@ module.exports = {
         path: "comfyui/ComfyUI",
         message: [
           "python -m ensurepip --upgrade",
-          "python -c \"import torch,sys; print('Torch',torch.__version__,'CUDA',torch.version.cuda); sys.exit(0 if (torch.version.cuda or '').startswith('13.0') else 1)\" || python -m pip install --upgrade --force-reinstall torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu130",
-          "python -m pip install -r requirements.txt"
+          "python -c \"import torch,sys; print('Torch',torch.__version__,'CUDA',torch.version.cuda); sys.exit(0 if (torch.version.cuda or '').startswith('13.0') else 1)\" || uv pip install --python ./comfy-env --upgrade --force-reinstall torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu130",
+          "uv pip install --python ./comfy-env -r requirements.txt"
         ]
       }
     },
@@ -35,8 +35,8 @@ module.exports = {
         path: "comfyui/ComfyUI",
         message: [
           "python -m ensurepip --upgrade",
-          "python -c \"import torch,sys; print('Torch',torch.__version__,'CUDA',torch.version.cuda); sys.exit(0 if (torch.version.cuda or '').startswith('12.8') else 1)\" || python -m pip install --upgrade --force-reinstall torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu128",
-          "python -m pip install -r requirements.txt"
+          "python -c \"import torch,sys; print('Torch',torch.__version__,'CUDA',torch.version.cuda); sys.exit(0 if (torch.version.cuda or '').startswith('12.8') else 1)\" || uv pip install --python ./comfy-env --upgrade --force-reinstall torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu128",
+          "uv pip install --python ./comfy-env -r requirements.txt"
         ]
       }
     },
@@ -49,8 +49,8 @@ module.exports = {
         path: "comfyui/ComfyUI",
         message: [
           "python -m ensurepip --upgrade",
-          "python -m pip install --upgrade torch torchvision torchaudio",
-          "python -m pip install -r requirements.txt"
+          "uv pip install --python ./comfy-env --upgrade torch torchvision torchaudio",
+          "uv pip install --python ./comfy-env -r requirements.txt"
         ]
       }
     },
@@ -63,8 +63,8 @@ module.exports = {
         path: "comfyui/ComfyUI",
         message: [
           "python -m ensurepip --upgrade",
-          "{{pip.install.torch}}",
-          "python -m pip install -r requirements.txt"
+          "{{pip.install.torch.replace(/^(?:uv )?pip3? install /, 'uv pip install --python ./comfy-env ')}}",
+          "uv pip install --python ./comfy-env -r requirements.txt"
         ]
       }
     }

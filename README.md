@@ -101,6 +101,23 @@ The Pinokio menu keeps Orange updates and ComfyUI updates separate:
 
 Normal Orange updates do not silently advance the managed ComfyUI revision.
 
+### Python package installation
+
+Install, update, rollback, and **Repair Dependencies** use Pinokio's bundled `uv` for Python package installs. Every install explicitly selects its target with `--python ./env` from `app/` (Orange) or `--python ./comfy-env` from `comfyui/ComfyUI/` (managed ComfyUI). uv accepts a virtual environment directory as a [Python target](https://docs.astral.sh/uv/pip/environments/#using-arbitrary-python-environments), so these paths work on Windows, macOS, and Linux without relying on environment discovery.
+
+The existing Python 3.12 environment creation and pip bootstrapping remain in place. CUDA 13.0/12.8 selection, update-time CUDA checks, package upgrade/reinstall flags, and Pinokio's platform-specific fallback Torch selection are preserved. The CUDA install/repair commands retain the PyTorch extra index alongside PyPI and use `--index-strategy unsafe-best-match` to preserve [pip's version selection across indexes](https://docs.astral.sh/uv/pip/compatibility/#packages-that-exist-on-multiple-indexes).
+
+This applies only to the Pinokio launcher. Orange's standalone launchers and external ComfyUI environments are unaffected and do not acquire a uv requirement.
+
+To run the package-install checks outside Pinokio (with Node.js, Python, and uv available):
+
+```text
+node --test tests/package-install.test.js
+python tests/test_uv_target.py
+```
+
+CI also runs the offline uv target-isolation test on Windows, macOS, and Linux. It installs a small test wheel into both target environments while a separate venv is active, including from paths containing spaces; it does not download PyTorch or exercise GPU execution.
+
 ## Resetting
 
 **Factory Reset (Deletes Local Data)** removes the Orange environment and local Orange data. On managed installs it also removes the bundled ComfyUI and its models.

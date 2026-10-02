@@ -22,7 +22,7 @@ module.exports = {
         venv_python: "3.12",
         path: "app",
         message: [
-          "uv pip install -r requirements.txt"
+          "uv pip install --python ./env -r requirements.txt"
         ]
       }
     }
